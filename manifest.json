@@ -1,11 +1,12 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "pomodoro-timer",
+	"name": "Pomodoro Timer",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "create pomodoro timer for your tasks, and track your time",
+	"author": "eatgrass",
+	"repo": "eatgrass/obsidian-pomodoro-timer",
+	"fundingUrl": "https://www.buymeacoffee.com/eatgrass",
+	"authorUrl": "https://github.com/eatgrass",
 	"isDesktopOnly": false
 }
