@@ -3,13 +3,16 @@ import moment from 'moment'
 import { Notice } from 'obsidian'
 import { type PomodoroLog, type Mode } from 'Pomodoro'
 import Timeline from 'Timeline.svelte'
+import Bell from 'Bell.svelte'
+
 export let workLen: number = 1
 export let breakLen: number = 2
 export let autostart: boolean = true
 
 let mode: Mode = 'WORK'
 
-let note: string|null = null
+let note: string | null = null
+let ring: () => void
 
 let elapsed: number = 0
 
@@ -125,6 +128,7 @@ const tick = () => {
 }
 
 const timeUp = () => {
+    ring()
     addLog()
     inSession = false
     running = false
@@ -148,7 +152,11 @@ const addLog = () => {
             to: moment(),
             mode,
             duration: duration,
-            note: note || `<strong>${mode}</strong>(${duration}min) from ${moment(startTime).format('HH:mm')} to ${moment().format('HH:mm')}`,
+            note:
+                note ||
+                `<strong>${mode}</strong>(${duration}min) from ${moment(
+                    startTime,
+                ).format('HH:mm')} to ${moment().format('HH:mm')}`,
         },
     ]
 }
@@ -379,7 +387,7 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                 </div>
                 <div class="input">
                     <label for="pomodoro-note">Note</label>
-                    <textarea id="pomodoro-note" rows="4" bind:value={note}/>
+                    <textarea id="pomodoro-note" rows="4" bind:value={note} />
                 </div>
                 <div class="input">
                     <label for="pomodoro-break-len">Auto start</label>
@@ -397,6 +405,7 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
         {/if}
     </div>
 </div>
+<Bell bind:ring />
 
 <style>
 .container {
@@ -471,7 +480,7 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
 .input-group {
     margin-top: 1.5rem;
     align-self: center;
-    width:100%;
+    width: 100%;
 }
 
 .input {
@@ -486,8 +495,9 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
     width: 80px;
 }
 
-.input textarea, .input input[type=number] {
-    flex:1;
+.input textarea,
+.input input[type='number'] {
+    flex: 1;
 }
 
 .breath {
