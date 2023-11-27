@@ -26,7 +26,7 @@ export class TimerView extends ItemView {
         this.timer = new Timer({
             target: this.contentEl,
             props: {
-                ...this.settings.getSettings(),
+                store: this.settings.store(),
             },
         })
     }

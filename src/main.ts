@@ -1,14 +1,7 @@
 import { TimerView, VIEW_TYPE_TIMER } from 'TimerView'
 import type moment from 'moment'
 import {
-    App,
-    Editor,
-    MarkdownView,
-    Modal,
-    Notice,
     Plugin,
-    PluginSettingTab,
-    Setting,
     WorkspaceLeaf,
 } from 'obsidian'
 import PomodoroSettings from 'Settings'

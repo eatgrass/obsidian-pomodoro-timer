@@ -4,12 +4,11 @@ import { Notice } from 'obsidian'
 import { type PomodoroLog, type Mode, POMO_EMOJI } from 'Pomodoro'
 import Timeline from 'Timeline.svelte'
 import Bell from 'Bell.svelte'
+import type { Writable } from 'svelte/store'
+import type { Settings } from 'Settings'
 const electron = require('electron')
 
-export let workLen: number = 1
-export let breakLen: number = 2
-export let autostart: boolean = true
-export let useSystemNotification: boolean = false
+export let store: Writable<Settings>
 
 let mode: Mode = 'WORK'
 
@@ -29,11 +28,13 @@ let startTime: number | null = null
 let logs: PomodoroLog[] = []
 let lastTick: number | null = startTime
 
-$: duration = mode === 'WORK' ? workLen : breakLen
+$: duration = mode === 'WORK' ? $store.workLen : $store.breakLen
+$: autostart = $store.autostart
 $: strokeColor = '#6fdb6f'
 $: count = duration * 60 * 1000
 $: remaining = moment.duration(count - elapsed)
 $: strokeOffset = (remaining.asMilliseconds() * offset) / count
+$: useSystemNotification = $store.useSystemNotification
 
 const tick = () => {
     if (!lastTick || !running) {
@@ -52,8 +53,19 @@ const tick = () => {
 }
 
 const timeUp = () => {
-    notify()
-    addLog()
+    const log = {
+        from: moment(startTime),
+        to: moment(),
+        mode,
+        duration: duration,
+        note:
+            note ||
+            `<strong>${mode}</strong>(${duration}min) from ${moment(
+                startTime,
+            ).format('HH:mm')} to ${moment().format('HH:mm')}`,
+    }
+    notify(log)
+    addLog(log)
     inSession = false
     running = false
 
@@ -63,7 +75,7 @@ const timeUp = () => {
     }
 }
 
-const notify = () => {
+const notify = (log: PomodoroLog) => {
     const text = `${POMO_EMOJI[mode]} You have been ${
         mode === 'WORK' ? 'working' : 'breaking'
     } for ${duration} minutes.`
@@ -71,7 +83,7 @@ const notify = () => {
     if (useSystemNotification) {
         const Notification = (electron as any).remote.Notification
         const sysNotification = new Notification({
-            title: `Pomodoro Timer`,
+            title: `Pomodoro Timer ${log.to.format('hh:mm A')}`,
             body: text,
             silent: true,
         })
@@ -84,21 +96,8 @@ const notify = () => {
     }
 }
 
-const addLog = () => {
-    logs = [
-        ...logs,
-        {
-            from: moment(startTime),
-            to: moment(),
-            mode,
-            duration: duration,
-            note:
-                note ||
-                `<strong>${mode}</strong>(${duration}min) from ${moment(
-                    startTime,
-                ).format('HH:mm')} to ${moment().format('HH:mm')}`,
-        },
-    ]
+const addLog = (log: PomodoroLog) => {
+    logs = [...logs, log]
 }
 
 const reset = () => {
@@ -311,7 +310,7 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                     <label for="pomodoro-wrok-len">Work</label>
                     <input
                         id="pomodoro-work-len"
-                        bind:value={workLen}
+                        bind:value={$store.workLen}
                         min="1"
                         type="number"
                         disabled={running} />
@@ -320,7 +319,7 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                     <label for="pomodoro-break-len">Break</label>
                     <input
                         id="pomodoro-break-len"
-                        bind:value={breakLen}
+                        bind:value={$store.breakLen}
                         min="0"
                         type="number"
                         disabled={running} />
@@ -334,7 +333,7 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                     <input
                         id="pomodoro-auto-start"
                         type="checkbox"
-                        bind:checked={autostart} />
+                        bind:checked={$store.autostart} />
                 </div>
             </div>
         {/if}
