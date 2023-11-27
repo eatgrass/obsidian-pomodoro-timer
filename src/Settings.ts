@@ -28,13 +28,16 @@ export default class PomodoroSettings extends PluginSettingTab {
         this.plugin = plugin
         this._settings = { ...DEFAULT_SETTINGS, ...settings }
         this.settings = writable<Settings>(this._settings)
+        this.settings.subscribe((settings) => {
+            this.plugin.saveData(settings)
+            this._settings = settings
+        })
     }
 
     public updateSettings = (newSettings: Partial<Settings>) => {
         this.settings.update((settings) => {
-            this._settings = { ...settings, ...newSettings }
-            this.plugin.saveData(this._settings)
-            return this._settings
+            this._settings = settings
+            return { ...settings, ...newSettings }
         })
     }
 

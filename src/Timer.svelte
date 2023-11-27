@@ -30,11 +30,18 @@ let lastTick: number | null = startTime
 
 $: duration = mode === 'WORK' ? $store.workLen : $store.breakLen
 $: autostart = $store.autostart
+$: useSystemNotification = $store.useSystemNotification
 $: strokeColor = '#6fdb6f'
 $: count = duration * 60 * 1000
 $: remaining = moment.duration(count - elapsed)
+$: display = () => {
+    let min = remaining.asMinutes().toFixed(0)
+    return `${min.padStart(Math.max(min.length, 2), '0')} : ${String(
+        remaining.seconds(),
+    ).padStart(2, '0')}`
+}
+
 $: strokeOffset = (remaining.asMilliseconds() * offset) / count
-$: useSystemNotification = $store.useSystemNotification
 
 const tick = () => {
     if (!lastTick || !running) {
@@ -167,9 +174,7 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                 </div>
                 <div on:click={toggleStart} class="control">
                     <h2>
-                        {String(remaining.minutes()).padStart(2, '0')} : {String(
-                            remaining.seconds(),
-                        ).padStart(2, '0')}
+                        {display()}
                     </h2>
                 </div>
             </div>
@@ -323,10 +328,6 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                         min="0"
                         type="number"
                         disabled={running} />
-                </div>
-                <div class="input">
-                    <label for="pomodoro-note">Note</label>
-                    <textarea id="pomodoro-note" rows="4" bind:value={note} />
                 </div>
                 <div class="input">
                     <label for="pomodoro-break-len">Auto start</label>
