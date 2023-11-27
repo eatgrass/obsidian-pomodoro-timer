@@ -1,13 +1,15 @@
 <script lang="ts">
 import moment from 'moment'
 import { Notice } from 'obsidian'
-import { type PomodoroLog, type Mode } from 'Pomodoro'
+import { type PomodoroLog, type Mode, POMO_EMOJI } from 'Pomodoro'
 import Timeline from 'Timeline.svelte'
 import Bell from 'Bell.svelte'
+const electron = require('electron')
 
 export let workLen: number = 1
 export let breakLen: number = 2
 export let autostart: boolean = true
+export let useSystemNotification: boolean = false
 
 let mode: Mode = 'WORK'
 
@@ -24,85 +26,7 @@ let extra: 'settings' | 'logs' | 'close' = 'close'
 
 const offset = 440
 let startTime: number | null = null
-let logs: PomodoroLog[] = [
-    {
-        from: moment().subtract(1, 'day'),
-        to: moment(),
-        mode: 'WORK',
-        duration: 1,
-        note: 'Hello word',
-    },
-    {
-        from: moment().subtract(1, 'day'),
-        to: moment(),
-        mode: 'BREAK',
-        duration: 72,
-        note: 'Hello word',
-    },
-    {
-        from: moment().subtract(1, 'day'),
-        to: moment(),
-        mode: 'WORK',
-        duration: 120,
-        note: 'Hello word',
-    },
-    {
-        from: moment().subtract(1, 'day'),
-        to: moment(),
-        mode: 'WORK',
-        duration: 10,
-        note: 'Hello word',
-    },
-    {
-        from: moment().subtract(1, 'day'),
-        to: moment(),
-        mode: 'WORK',
-        duration: 1,
-        note: 'ipsum dolor sit amet, consectetur adipiscing elit. Donec auctor, nisl eget ultricies ultricies, nisl nisl ultricies',
-    },
-    {
-        from: moment().subtract(1, 'day'),
-        to: moment(),
-        mode: 'WORK',
-        duration: 1,
-        note: 'Hello word',
-    },
-    {
-        from: moment().subtract(1, 'day'),
-        to: moment(),
-        mode: 'WORK',
-        duration: 1,
-        note: 'Hello word',
-    },
-    {
-        from: moment().subtract(1, 'day'),
-        to: moment(),
-        mode: 'WORK',
-        duration: 1,
-        note: 'Hello word',
-    },
-    {
-        from: moment().subtract(1, 'day'),
-        to: moment(),
-        mode: 'WORK',
-        duration: 1,
-        note: 'Hello word',
-    },
-    {
-        from: moment().subtract(1, 'day'),
-        to: moment(),
-        mode: 'WORK',
-        duration: 1,
-        note: 'Hello word',
-    },
-    {
-        from: moment().subtract(1, 'day'),
-        to: moment(),
-        mode: 'WORK',
-        duration: 1,
-        note: 'Hello word',
-    },
-]
+let logs: PomodoroLog[] = []
 let lastTick: number | null = startTime
 
 $: duration = mode === 'WORK' ? workLen : breakLen
@@ -128,19 +52,35 @@ const tick = () => {
 }
 
 const timeUp = () => {
-    ring()
+    notify()
     addLog()
     inSession = false
     running = false
-    new Notice(
-        `You have been ${
-            mode === 'WORK' ? 'working' : 'breaking'
-        } for ${duration} minutes.`,
-    )
 
     if (autostart) {
         toggleMode()
         start()
+    }
+}
+
+const notify = () => {
+    const text = `${POMO_EMOJI[mode]} You have been ${
+        mode === 'WORK' ? 'working' : 'breaking'
+    } for ${duration} minutes.`
+    ring()
+    if (useSystemNotification) {
+        const Notification = (electron as any).remote.Notification
+        const sysNotification = new Notification({
+            title: `Pomodoro Timer`,
+            body: text,
+            silent: true,
+        })
+        sysNotification.on('click', () => {
+            sysNotification.close()
+        })
+        sysNotification.show()
+    } else {
+        new Notice(`${text}`)
     }
 }
 

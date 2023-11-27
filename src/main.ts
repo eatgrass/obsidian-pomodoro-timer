@@ -11,6 +11,7 @@ import {
     Setting,
     WorkspaceLeaf,
 } from 'obsidian'
+import PomodoroSettings from 'Settings'
 
 declare global {
     interface Window {
@@ -18,19 +19,19 @@ declare global {
     }
 }
 export default class PomodoroTimerPlugin extends Plugin {
+    private settingTab?: PomodoroSettings
+
     async onload() {
-        await this.loadSettings()
-        this.registerView(VIEW_TYPE_TIMER, (leaf) => new TimerView(leaf))
+        const settings = await this.loadData()
+        this.settingTab = new PomodoroSettings(this, settings)
+        this.addSettingTab(this.settingTab)
+        this.registerView(VIEW_TYPE_TIMER, (leaf) => new TimerView(leaf, this.settingTab!))
         this.addRibbonIcon('clock', 'Toggle timer panel', () => {
             this.activateView()
         })
     }
 
     onunload() {}
-
-    async loadSettings() {}
-
-    async saveSettings() {}
 
     async activateView() {
         let { workspace } = this.app

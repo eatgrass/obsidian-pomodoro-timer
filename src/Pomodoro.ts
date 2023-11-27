@@ -9,3 +9,8 @@ export interface PomodoroLog {
 }
 
 export type Mode = 'WORK' | 'BREAK'
+
+export const POMO_EMOJI: Record<Mode, string> = {
+    WORK: '🍅',
+    BREAK: '🥤',
+}
