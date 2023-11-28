@@ -1,10 +1,8 @@
 import { TimerView, VIEW_TYPE_TIMER } from 'TimerView'
 import type moment from 'moment'
-import {
-    Plugin,
-    WorkspaceLeaf,
-} from 'obsidian'
+import { Plugin, WorkspaceLeaf } from 'obsidian'
 import PomodoroSettings from 'Settings'
+import stores from 'stores'
 
 declare global {
     interface Window {
@@ -16,9 +14,16 @@ export default class PomodoroTimerPlugin extends Plugin {
 
     async onload() {
         const settings = await this.loadData()
+
+        // init svelte stores
+        stores.plugin.set(this)
+
         this.settingTab = new PomodoroSettings(this, settings)
         this.addSettingTab(this.settingTab)
-        this.registerView(VIEW_TYPE_TIMER, (leaf) => new TimerView(leaf, this.settingTab!))
+        this.registerView(
+            VIEW_TYPE_TIMER,
+            (leaf) => new TimerView(leaf, this.settingTab!),
+        )
         this.addRibbonIcon('clock', 'Toggle timer panel', () => {
             this.activateView()
         })

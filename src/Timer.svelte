@@ -1,19 +1,16 @@
 <script lang="ts">
 import moment from 'moment'
 import { Notice } from 'obsidian'
-import { type PomodoroLog, type Mode, POMO_EMOJI } from 'Pomodoro'
-import Timeline from 'Timeline.svelte'
+import { PomodoroLog, type Mode, POMO_EMOJI } from 'Pomodoro'
+import Timeline from 'Logger.svelte'
 import Bell from 'Bell.svelte'
-import type { Writable } from 'svelte/store'
-import type { Settings } from 'Settings'
+import { settings } from 'stores'
 const electron = require('electron')
-
-export let store: Writable<Settings>
 
 let mode: Mode = 'WORK'
 
-let note: string | null = null
 let ring: () => void
+let addLog: (log: PomodoroLog) => Promise<void>
 
 let elapsed: number = 0
 
@@ -25,17 +22,19 @@ let extra: 'settings' | 'logs' | 'close' = 'close'
 
 const offset = 440
 let startTime: number | null = null
-let logs: PomodoroLog[] = []
+let logs: PomodoroLog[] = [
+    new PomodoroLog(25, moment(), moment().subtract(1, 'day'), 'WORK'),
+]
 let lastTick: number | null = startTime
 
-$: duration = mode === 'WORK' ? $store.workLen : $store.breakLen
-$: autostart = $store.autostart
-$: useSystemNotification = $store.useSystemNotification
+$: duration = mode === 'WORK' ? $settings.workLen : $settings.breakLen
+$: autostart = $settings.autostart
+$: useSystemNotification = $settings.useSystemNotification
 $: strokeColor = '#6fdb6f'
 $: count = duration * 60 * 1000
 $: remaining = moment.duration(count - elapsed)
 $: display = () => {
-    let min = remaining.asMinutes().toFixed(0)
+    let min = Math.floor(remaining.asMinutes()).toString()
     return `${min.padStart(Math.max(min.length, 2), '0')} : ${String(
         remaining.seconds(),
     ).padStart(2, '0')}`
@@ -60,17 +59,7 @@ const tick = () => {
 }
 
 const timeUp = () => {
-    const log = {
-        from: moment(startTime),
-        to: moment(),
-        mode,
-        duration: duration,
-        note:
-            note ||
-            `<strong>${mode}</strong>(${duration}min) from ${moment(
-                startTime,
-            ).format('HH:mm')} to ${moment().format('HH:mm')}`,
-    }
+    const log = new PomodoroLog(duration, moment(startTime), moment(), mode)
     notify(log)
     addLog(log)
     inSession = false
@@ -90,7 +79,7 @@ const notify = (log: PomodoroLog) => {
     if (useSystemNotification) {
         const Notification = (electron as any).remote.Notification
         const sysNotification = new Notification({
-            title: `Pomodoro Timer ${log.to.format('hh:mm A')}`,
+            title: `Pomodoro Timer ${log.end.format('hh:mm A')}`,
             body: text,
             silent: true,
         })
@@ -101,10 +90,6 @@ const notify = (log: PomodoroLog) => {
     } else {
         new Notice(`${text}`)
     }
-}
-
-const addLog = (log: PomodoroLog) => {
-    logs = [...logs, log]
 }
 
 const reset = () => {
@@ -315,7 +300,7 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                     <label for="pomodoro-wrok-len">Work</label>
                     <input
                         id="pomodoro-work-len"
-                        bind:value={$store.workLen}
+                        bind:value={$settings.workLen}
                         min="1"
                         type="number"
                         disabled={running} />
@@ -324,7 +309,7 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                     <label for="pomodoro-break-len">Break</label>
                     <input
                         id="pomodoro-break-len"
-                        bind:value={$store.breakLen}
+                        bind:value={$settings.breakLen}
                         min="0"
                         type="number"
                         disabled={running} />
@@ -334,15 +319,11 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                     <input
                         id="pomodoro-auto-start"
                         type="checkbox"
-                        bind:checked={$store.autostart} />
+                        bind:checked={$settings.autostart} />
                 </div>
             </div>
         {/if}
-        {#if extra === 'logs'}
-            <div>
-                <Timeline {logs} />
-            </div>
-        {/if}
+        <Timeline show={extra === 'logs'} bind:addLog />
     </div>
 </div>
 <Bell bind:ring />
@@ -435,7 +416,6 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
     width: 80px;
 }
 
-.input textarea,
 .input input[type='number'] {
     flex: 1;
 }

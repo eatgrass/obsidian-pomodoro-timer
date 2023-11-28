@@ -1,5 +1,6 @@
 import type PomodoroTimerPlugin from 'main'
 import { PluginSettingTab, Setting } from 'obsidian'
+import stores from 'stores'
 import { writable, type Writable } from 'svelte/store'
 
 export interface Settings {
@@ -22,23 +23,26 @@ export const DEFAULT_SETTINGS: Settings = {
     useStatusBarTimer: false,
     logFile: 'NONE',
     logPath: '',
-    workLogTemplate: '',
-    breakLogTemplate: '',
+    workLogTemplate:
+        '- (pomodoro::🍅)(duration:: {duration}m)(begin:: {begin|YYYY-MM-DD HH:mm}) - (end:: {end|YYYY-MM-DD HH:mm})',
+    breakLogTemplate:
+        '- (pomodoro::🥤)(duration:: {duration}m)(begin:: {begin|YYYY-MM-DD HH:mm}) - (end:: {end|YYYY-MM-DD HH:mm})',
+
 }
 
 export default class PomodoroSettings extends PluginSettingTab {
-    private settings: Writable<Settings>
-
     private _settings: Settings
 
     private plugin: PomodoroTimerPlugin
+
+    static settings: Writable<Settings> = writable<Settings>(DEFAULT_SETTINGS)
 
     constructor(plugin: PomodoroTimerPlugin, settings: Settings) {
         super(plugin.app, plugin)
         this.plugin = plugin
         this._settings = { ...DEFAULT_SETTINGS, ...settings }
-        this.settings = writable<Settings>(this._settings)
-        this.settings.subscribe((settings) => {
+        PomodoroSettings.settings.set(this._settings)
+        PomodoroSettings.settings.subscribe((settings) => {
             this.plugin.saveData(settings)
             this._settings = settings
         })
@@ -48,17 +52,13 @@ export default class PomodoroSettings extends PluginSettingTab {
         newSettings: Partial<Settings>,
         refreshUI: boolean = false,
     ) => {
-        this.settings.update((settings) => {
+        PomodoroSettings.settings.update((settings) => {
             this._settings = { ...settings, ...newSettings }
             if (refreshUI) {
                 this.display()
             }
             return this._settings
         })
-    }
-
-    public store = () => {
-        return this.settings
     }
 
     public display() {
@@ -152,7 +152,7 @@ export default class PomodoroSettings extends PluginSettingTab {
                             text: 'The template to use when logging to file',
                         }),
                         createEl('p', {
-                            text: 'Available variables: from, to, duration',
+                            text: 'Available variables: {{from}}, {{to}}, {{duration}}',
                         }),
                     )
                 }),
