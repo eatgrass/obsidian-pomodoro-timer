@@ -1,6 +1,5 @@
 import type PomodoroTimerPlugin from 'main'
 import { PluginSettingTab, Setting } from 'obsidian'
-import stores from 'stores'
 import { writable, type Writable } from 'svelte/store'
 
 export interface Settings {
@@ -11,8 +10,6 @@ export interface Settings {
     useStatusBarTimer: boolean
     logFile: 'DAILY' | 'FILE' | 'NONE'
     logPath: string
-    workLogTemplate: string
-    breakLogTemplate: string
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -23,11 +20,6 @@ export const DEFAULT_SETTINGS: Settings = {
     useStatusBarTimer: false,
     logFile: 'NONE',
     logPath: '',
-    workLogTemplate:
-        '- (pomodoro::🍅)(duration:: {duration}m)(begin:: {begin|YYYY-MM-DD HH:mm}) - (end:: {end|YYYY-MM-DD HH:mm})',
-    breakLogTemplate:
-        '- (pomodoro::🥤)(duration:: {duration}m)(begin:: {begin|YYYY-MM-DD HH:mm}) - (end:: {end|YYYY-MM-DD HH:mm})',
-
 }
 
 export default class PomodoroSettings extends PluginSettingTab {
@@ -36,6 +28,8 @@ export default class PomodoroSettings extends PluginSettingTab {
     private plugin: PomodoroTimerPlugin
 
     static settings: Writable<Settings> = writable<Settings>(DEFAULT_SETTINGS)
+
+    static DEFAULT_SETTINGS = DEFAULT_SETTINGS
 
     constructor(plugin: PomodoroTimerPlugin, settings: Settings) {
         super(plugin.app, plugin)
@@ -46,6 +40,10 @@ export default class PomodoroSettings extends PluginSettingTab {
             this.plugin.saveData(settings)
             this._settings = settings
         })
+    }
+
+    public getSettings(): Settings {
+        return this._settings
     }
 
     public updateSettings = (
@@ -118,54 +116,6 @@ export default class PomodoroSettings extends PluginSettingTab {
                     })
                 })
         }
-
-        new Setting(containerEl)
-            .setName('Work log template')
-            .setDesc(
-                createFragment((el) => {
-                    el.append(
-                        createEl('span', {
-                            text: 'The template to use when logging to file',
-                        }),
-                        createEl('p', {
-                            text: 'Available variables: {{from}}, {{to}}, {{duration}}',
-                        }),
-                    )
-                }),
-            )
-            .addTextArea((text) => {
-                text.inputEl.rows = 3
-                text.inputEl.style.width = '300px'
-                text.inputEl.style.resize = 'none'
-                text.setValue(this._settings.workLogTemplate)
-                text.onChange((value) => {
-                    this.updateSettings({ workLogTemplate: value })
-                })
-            })
-
-        new Setting(containerEl)
-            .setName('Break log template')
-            .setDesc(
-                createFragment((el) => {
-                    el.append(
-                        createEl('span', {
-                            text: 'The template to use when logging to file',
-                        }),
-                        createEl('p', {
-                            text: 'Available variables: {{from}}, {{to}}, {{duration}}',
-                        }),
-                    )
-                }),
-            )
-            .addTextArea((text) => {
-                text.inputEl.rows = 3
-                text.inputEl.style.width = '300px'
-                text.inputEl.style.resize = 'none'
-                text.setValue(this._settings.breakLogTemplate)
-                text.onChange((value) => {
-                    this.updateSettings({ breakLogTemplate: value })
-                })
-            })
 
         new Setting(containerEl).addButton((button) => {
             button.setButtonText('Restore settings')

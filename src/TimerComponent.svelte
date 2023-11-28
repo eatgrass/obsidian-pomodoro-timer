@@ -1,38 +1,29 @@
 <script lang="ts">
 import moment from 'moment'
+import { onDestroy } from 'svelte'
 import { Notice } from 'obsidian'
 import { PomodoroLog, type Mode, POMO_EMOJI } from 'Pomodoro'
-import Timeline from 'Logger.svelte'
 import Bell from 'Bell.svelte'
 import { settings } from 'stores'
+import { saveLog } from 'Pomodoro'
+import { type TimerStore } from 'TimerStore'
 const electron = require('electron')
 
-let mode: Mode = 'WORK'
-
+// let mode: Mode = 'WORK'
 let ring: () => void
-let addLog: (log: PomodoroLog) => Promise<void>
-
-let elapsed: number = 0
-
-let inSession: boolean = false
-
-let running: boolean = false
+export let timer: TimerStore
 
 let extra: 'settings' | 'logs' | 'close' = 'close'
-
 const offset = 440
-let startTime: number | null = null
-let logs: PomodoroLog[] = [
-    new PomodoroLog(25, moment(), moment().subtract(1, 'day'), 'WORK'),
-]
-let lastTick: number | null = startTime
 
-$: duration = mode === 'WORK' ? $settings.workLen : $settings.breakLen
+onDestroy(() => {
+    pause()
+})
+
 $: autostart = $settings.autostart
 $: useSystemNotification = $settings.useSystemNotification
 $: strokeColor = '#6fdb6f'
-$: count = duration * 60 * 1000
-$: remaining = moment.duration(count - elapsed)
+$: remaining = moment.duration($timer.count - $timer.elapsed)
 $: display = () => {
     let min = Math.floor(remaining.asMinutes()).toString()
     return `${min.padStart(Math.max(min.length, 2), '0')} : ${String(
@@ -40,41 +31,41 @@ $: display = () => {
     ).padStart(2, '0')}`
 }
 
-$: strokeOffset = (remaining.asMilliseconds() * offset) / count
+$: strokeOffset = (remaining.asMilliseconds() * offset) / $timer.count
 
 const tick = () => {
-    if (!lastTick || !running) {
-        return
+    if ($timer.running && $timer.lastTick) {
+        timer.tick()
+        $timer.count > $timer.elapsed ? requestAnimationFrame(tick) : timeUp()
     }
-    let now = new Date().getTime()
-    let diff = now - lastTick
-    lastTick = now
-    if (elapsed + diff >= count) {
-        elapsed = count
-        timeUp()
-        return
+}
+
+const start = () => {
+    if (!$timer.running) {
+        timer.start()
+        tick()
     }
-    elapsed += diff
-    requestAnimationFrame(tick)
 }
 
 const timeUp = () => {
-    const log = new PomodoroLog(duration, moment(startTime), moment(), mode)
+    const log = new PomodoroLog(
+        $timer.mode,
+        $timer.duration,
+        moment($timer.startTime),
+        moment(),
+    )
     notify(log)
-    addLog(log)
-    inSession = false
-    running = false
-
-    if (autostart) {
-        toggleMode()
+    saveLog(log)
+    timer.endSession()
+    if ($settings.autostart) {
         start()
     }
 }
 
 const notify = (log: PomodoroLog) => {
-    const text = `${POMO_EMOJI[mode]} You have been ${
-        mode === 'WORK' ? 'working' : 'breaking'
-    } for ${duration} minutes.`
+    const text = `${POMO_EMOJI[$timer.mode]} You have been ${
+        $timer.mode === 'WORK' ? 'working' : 'breaking'
+    } for ${$timer.duration} minutes.`
     ring()
     if (useSystemNotification) {
         const Notification = (electron as any).remote.Notification
@@ -93,44 +84,21 @@ const notify = (log: PomodoroLog) => {
 }
 
 const reset = () => {
-    pause()
-    inSession = false
-    elapsed = 0
-    startTime = null
-}
-
-const start = () => {
-    if (running) {
-        return
-    }
-    if (!inSession) {
-        reset()
-        startTime = new Date().getTime()
-    }
-    lastTick = new Date().getTime()
-    inSession = true
-    running = true
-    tick()
+    timer.reset()
 }
 
 const pause = () => {
-    if (!running) {
-        return
+    if ($timer.running) {
+        timer.pause()
     }
-    running = false
 }
 
 const toggleStart = () => {
-    running ? pause() : start()
+    $timer.running ? pause() : start()
 }
 
 const toggleMode = () => {
-    if (mode === 'WORK') {
-        mode = 'BREAK'
-    } else {
-        mode = 'WORK'
-    }
-    reset()
+    timer.endSession()
 }
 
 const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
@@ -149,8 +117,8 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
         <div class="timer">
             <div class="timer-display">
                 <div class="status control" on:click={toggleMode}>
-                    {#if running}<span class="breath"></span>{/if}
-                    {#if mode === 'WORK'}
+                    {#if $timer.running}<span class="breath"></span>{/if}
+                    {#if $timer.mode === 'WORK'}
                         <span class="control mode">Work</span>
                     {:else}
                         <span class="control mode">Break</span>
@@ -226,7 +194,7 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                         d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path
                         d="M3 3v5h5" /></svg>
             </span>
-            {#if !running}
+            {#if !$timer.running}
                 <span on:click={start} class="control">
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -261,36 +229,6 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                             y="4" /></svg>
                 </span>
             {/if}
-            <span
-                class="control"
-                on:click={() => {
-                    toggleExtra('logs')
-                }}>
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="lucide lucide-list"
-                    ><line x1="8" x2="21" y1="6" y2="6" /><line
-                        x1="8"
-                        x2="21"
-                        y1="12"
-                        y2="12" /><line x1="8" x2="21" y1="18" y2="18" /><line
-                        x1="3"
-                        x2="3.01"
-                        y1="6"
-                        y2="6" /><line x1="3" x2="3.01" y1="12" y2="12" /><line
-                        x1="3"
-                        x2="3.01"
-                        y1="18"
-                        y2="18" /></svg>
-            </span>
         </div>
     </div>
     <div class="extra">
@@ -302,8 +240,7 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                         id="pomodoro-work-len"
                         bind:value={$settings.workLen}
                         min="1"
-                        type="number"
-                        disabled={running} />
+                        type="number" />
                 </div>
                 <div class="input">
                     <label for="pomodoro-break-len">Break</label>
@@ -311,8 +248,7 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                         id="pomodoro-break-len"
                         bind:value={$settings.breakLen}
                         min="0"
-                        type="number"
-                        disabled={running} />
+                        type="number" />
                 </div>
                 <div class="input">
                     <label for="pomodoro-break-len">Auto start</label>
@@ -323,7 +259,6 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                 </div>
             </div>
         {/if}
-        <Timeline show={extra === 'logs'} bind:addLog />
     </div>
 </div>
 <Bell bind:ring />
