@@ -43,6 +43,8 @@ settings.subscribe(($settings) => {
     update((state) => {
         state.workLen = $settings.workLen
         state.breakLen = $settings.breakLen
+        state.duration = state.mode == 'WORK' ? state.workLen : state.breakLen
+        state.count = state.duration * 60 * 1000
         return state
     })
 })
