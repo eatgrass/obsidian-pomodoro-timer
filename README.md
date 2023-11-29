@@ -1,11 +1,14 @@
 <h1 align="center">Pomodoro Timer for Obsidian</h1>
 
+## Introduction
+This plugin integrates a customizable Pomodoro timer into your Obsidian workspace, helping you focus and manage your time effectively.
+
 ## Features
 
-- Customizable work and break time length
-- Audible notifications
-- A timer displayed in the status bar
-- Integration with your daily note for logging
+- **Customizable Timer**: Set your work and break intervals to suit your productivity style.
+- **Audible Alerts**: Stay on track with audio notifications signaling the end of each session.
+- **Status Bar Display**: Monitor your progress directly from Obsidian's status bar to keep focusing.
+- **Daily Note Integration**: Automatically log your sessions in your daily notes for better tracking.
 
 ## Screenshots
 
