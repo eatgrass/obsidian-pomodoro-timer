@@ -2,10 +2,10 @@
 
 ## Features
 
-- Customize work/break time
-- Sound notification
-- Status bar timer
-- Log to your daily note
+- Customizable work and break times
+- Audible notifications
+- A timer displayed in the status bar
+- Integration with your daily note for logging
 
 ## Screenshots
 
@@ -14,6 +14,8 @@
 ## Examples of Using with DataView
 
 ### Log Table
+
+This DataView script generates a table showing Pomodoro sessions with their durations, start, and end times.
 
 ![image](https://github.com/eatgrass/obsidian-pomodoro-timer/assets/2351076/ebcf33ac-291e-4659-ab03-93bfbe1c79d3)
 
@@ -36,6 +38,8 @@ dv.paragraph(table)
 </pre>
 
 ### Summary View
+
+This DataView script presents a summary of Pomodoro sessions, categorized by date.
 
 ![image](https://github.com/eatgrass/obsidian-pomodoro-timer/assets/2351076/84119bb0-c78e-4716-9a76-ffa72d94a587)
 
@@ -71,6 +75,8 @@ dv.table(
 
 ### Task Tracking
 
+Enhance your tasks with Pomodoro logs as sublists. Each entry details the type of session, duration, and timestamps.
+
 ```markdown
 # add logs as sublist of your task
 - [ ] My Awesome Task
@@ -82,7 +88,6 @@ dv.table(
 ```
 
 ![image](https://github.com/eatgrass/obsidian-pomodoro-timer/assets/2351076/538d6b11-c6c7-4660-a401-0d4d42fc8b84)
-
 
 <pre>
 ```dataviewjs
