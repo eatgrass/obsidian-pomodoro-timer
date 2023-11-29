@@ -1,14 +1,14 @@
 {
-	"name": "obsidian-sample-plugin",
+	"name": "obsidian-pomodoro-timer",
 	"version": "1.0.0",
-	"description": "This is a sample plugin for Obsidian (https://obsidian.md)",
+	"description": "a pomodoro timer that helps manage your daily focus",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
-	"keywords": [],
+	"keywords": ["obsidian-plugin", "pomodoro", "timer"],
 	"author": "",
 	"license": "MIT",
 	"devDependencies": {
