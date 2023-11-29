@@ -90,7 +90,7 @@ Enhance your tasks with Pomodoro logs as sublists. Each entry details the type o
     - 🍅 (pomodoro::WORK) (duration:: 1m) (begin:: 2023-11-29 14:01) - (end:: 2023-11-29 14:03)
 ```
 
-![image](https://github.com/eatgrass/obsidian-pomodoro-timer/assets/2351076/538d6b11-c6c7-4660-a401-0d4d42fc8b84)
+![image](https://github.com/eatgrass/obsidian-pomodoro-timer/assets/2351076/2c0c9852-fd86-4390-8519-7cb3a049ec28)
 
 <pre>
 ```dataviewjs
@@ -103,13 +103,12 @@ dv.table(
     .map((task) => {
       let p = task.children
         .filter((child) => child.pomodoro == "WORK")
-        .map((child) => child.duration);
+        .map((child) => child.duration.as("minutes"));
       let sum = p
-        .reduce((t, a) => t.plus(a), Duration.fromObject({}))
-        .as("minutes");
+        .reduce((a, b) => a+b,0)
       let pomodoros =
         p.length > 5 ? `${emoji} ${p.length}` : `${emoji.repeat(p.length)}`;
-      return [task.text, pomodoros, sum];
+      return [task.text, pomodoros, `${sum} minutes`];
     })
 )
 ```
