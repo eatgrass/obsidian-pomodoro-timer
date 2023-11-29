@@ -1,20 +1,13 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian'
-import TimerComponent from './TimerComponent.svelte'
-import type PomodoroTimerPlugin from 'main'
-import { store, type TimerStore } from 'TimerStore'
+import TimerComponent from './TimerViewComponent.svelte'
+import { store } from 'Timer'
 
 export const VIEW_TYPE_TIMER = 'timer-view'
 
 export class TimerView extends ItemView {
-    private plugin: PomodoroTimerPlugin
-
-    static timer: TimerStore = store
-
-    static component: TimerComponent | null
-
-    constructor(leaf: WorkspaceLeaf, plugin: PomodoroTimerPlugin) {
+    constructor(leaf: WorkspaceLeaf) {
         super(leaf)
-        this.plugin = plugin
+        this.icon = 'timer'
     }
 
     getViewType(): string {
@@ -26,23 +19,13 @@ export class TimerView extends ItemView {
     }
 
     async onOpen() {
-        if (!TimerView.component) {
-            TimerView.component = new TimerComponent({
-                target: this.contentEl,
-                props: {
-                    timer: TimerView.timer,
-                },
-            })
-        }
+        new TimerComponent({
+            target: this.contentEl,
+            props: {
+                timer: store,
+            },
+        })
     }
 
-    async onClose() {
-        if (TimerView.component) {
-            TimerView.component.$destroy()
-            this.containerEl.empty()
-            TimerView.component = null
-        }
-    }
-
-    destroy() {}
+    async onClose() {}
 }

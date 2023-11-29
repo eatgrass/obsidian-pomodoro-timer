@@ -1,85 +1,17 @@
 <script lang="ts">
-import moment from 'moment'
-import { onDestroy } from 'svelte'
-import { Notice } from 'obsidian'
-import { PomodoroLog, type Mode, POMO_EMOJI } from 'Pomodoro'
-import Bell from 'Bell.svelte'
 import { settings } from 'stores'
-import { saveLog } from 'Pomodoro'
-import { type TimerStore } from 'TimerStore'
-const electron = require('electron')
-
-// let mode: Mode = 'WORK'
-let ring: () => void
+import { type TimerStore, remained } from 'Timer'
 export let timer: TimerStore
 
 let extra: 'settings' | 'logs' | 'close' = 'close'
 const offset = 440
 
-onDestroy(() => {
-    pause()
-})
-
-$: autostart = $settings.autostart
-$: useSystemNotification = $settings.useSystemNotification
 $: strokeColor = '#6fdb6f'
-$: remaining = moment.duration($timer.count - $timer.elapsed)
-$: display = () => {
-    let min = Math.floor(remaining.asMinutes()).toString()
-    return `${min.padStart(Math.max(min.length, 2), '0')} : ${String(
-        remaining.seconds(),
-    ).padStart(2, '0')}`
-}
-
-$: strokeOffset = (remaining.asMilliseconds() * offset) / $timer.count
-
-const tick = () => {
-    if ($timer.running && $timer.lastTick) {
-        timer.tick()
-        $timer.count > $timer.elapsed ? requestAnimationFrame(tick) : timeUp()
-    }
-}
+$: strokeOffset = ($remained.millis * offset) / $timer.count
 
 const start = () => {
     if (!$timer.running) {
         timer.start()
-        tick()
-    }
-}
-
-const timeUp = () => {
-    const log = new PomodoroLog(
-        $timer.mode,
-        $timer.duration,
-        moment($timer.startTime),
-        moment(),
-    )
-    notify(log)
-    saveLog(log)
-    timer.endSession()
-    if ($settings.autostart) {
-        start()
-    }
-}
-
-const notify = (log: PomodoroLog) => {
-    const text = `${POMO_EMOJI[$timer.mode]} You have been ${
-        $timer.mode === 'WORK' ? 'working' : 'breaking'
-    } for ${$timer.duration} minutes.`
-    ring()
-    if (useSystemNotification) {
-        const Notification = (electron as any).remote.Notification
-        const sysNotification = new Notification({
-            title: `Pomodoro Timer ${log.end.format('hh:mm A')}`,
-            body: text,
-            silent: true,
-        })
-        sysNotification.on('click', () => {
-            sysNotification.close()
-        })
-        sysNotification.show()
-    } else {
-        new Notice(`${text}`)
     }
 }
 
@@ -93,12 +25,12 @@ const pause = () => {
     }
 }
 
-const toggleStart = () => {
-    $timer.running ? pause() : start()
+const toggleTimer = () => {
+    timer.toggleTimer()
 }
 
 const toggleMode = () => {
-    timer.endSession()
+    timer.toggleMode()
 }
 
 const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
@@ -125,9 +57,9 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                     {/if}
                     <span></span>
                 </div>
-                <div on:click={toggleStart} class="control">
+                <div on:click={toggleTimer} class="control">
                     <h2>
-                        {display()}
+                        {$remained.human}
                     </h2>
                 </div>
             </div>
@@ -261,7 +193,6 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
         {/if}
     </div>
 </div>
-<Bell bind:ring />
 
 <style>
 .container {

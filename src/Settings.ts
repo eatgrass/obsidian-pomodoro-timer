@@ -6,7 +6,6 @@ export interface Settings {
     workLen: number
     breakLen: number
     autostart: boolean
-    useSystemNotification: boolean
     useStatusBarTimer: boolean
     logFile: 'DAILY' | 'FILE' | 'NONE'
     logPath: string
@@ -16,7 +15,6 @@ export const DEFAULT_SETTINGS: Settings = {
     workLen: 25,
     breakLen: 5,
     autostart: false,
-    useSystemNotification: false,
     useStatusBarTimer: false,
     logFile: 'NONE',
     logPath: '',
@@ -62,16 +60,6 @@ export default class PomodoroSettings extends PluginSettingTab {
     public display() {
         const { containerEl } = this
         containerEl.empty()
-
-        new Setting(containerEl)
-            .setName('Enable system notification')
-            .setDesc('Enable system notification when timer ends')
-            .addToggle((toggle) => {
-                toggle.setValue(this._settings.useSystemNotification)
-                toggle.onChange((value) => {
-                    this.updateSettings({ useSystemNotification: value })
-                })
-            })
 
         new Setting(containerEl)
             .setName('Enable status bar timer')
