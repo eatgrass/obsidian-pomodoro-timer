@@ -2,7 +2,7 @@
 
 ## Features
 
-- Customizable work and break time
+- Customizable work and break time length
 - Audible notifications
 - A timer displayed in the status bar
 - Integration with your daily note for logging
