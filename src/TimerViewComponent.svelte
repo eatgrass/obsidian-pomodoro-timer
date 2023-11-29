@@ -40,6 +40,30 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
     }
     extra = value
 }
+
+const updateWorkLen = (e: Event) => {
+    const target = e.target as HTMLInputElement
+    const value = parseInt(target.value)
+    settings.update((s) => {
+        if (value >= 1) {
+            s.workLen = value
+        }
+        target.value = s.workLen.toString()
+        return s
+    })
+}
+
+const updateBreakLen = (e: Event) => {
+    const target = e.target as HTMLInputElement
+    const value = parseInt(target.value)
+    settings.update((s) => {
+        if (value >= 0) {
+            s.breakLen = value
+        }
+        target.value = s.workLen.toString()
+        return s
+    })
+}
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -170,7 +194,8 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                     <label for="pomodoro-wrok-len">Work</label>
                     <input
                         id="pomodoro-work-len"
-                        bind:value={$settings.workLen}
+                        value={$settings.workLen}
+                        on:change={updateWorkLen}
                         min="1"
                         type="number" />
                 </div>
@@ -178,7 +203,8 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                     <label for="pomodoro-break-len">Break</label>
                     <input
                         id="pomodoro-break-len"
-                        bind:value={$settings.breakLen}
+                        value={$settings.breakLen}
+                        on:change={updateBreakLen}
                         min="0"
                         type="number" />
                 </div>

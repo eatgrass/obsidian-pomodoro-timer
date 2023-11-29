@@ -67,9 +67,12 @@ settings.subscribe(($settings) => {
     update((state) => {
         state.workLen = $settings.workLen
         state.breakLen = $settings.breakLen
-        state.duration = state.mode == 'WORK' ? state.workLen : state.breakLen
-        state.count = state.duration * 60 * 1000
         state.autostart = $settings.autostart
+        if (!state.running && !state.inSession) {
+            state.duration =
+                state.mode == 'WORK' ? state.workLen : state.breakLen
+            state.count = state.duration * 60 * 1000
+        }
         return state
     })
 })
@@ -166,7 +169,11 @@ const methods: TimerControl = {
         }
     },
     endSession(s: TimerState) {
-        s.mode = s.mode == 'WORK' ? 'BREAK' : 'WORK'
+        if (s.breakLen == 0) {
+            s.mode = 'WORK'
+        } else {
+            s.mode = s.mode == 'WORK' ? 'BREAK' : 'WORK'
+        }
         s.duration = s.mode == 'WORK' ? s.workLen : s.breakLen
         s.count = s.duration * 60 * 1000
         s.inSession = false
