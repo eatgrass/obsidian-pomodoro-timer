@@ -1,7 +1,7 @@
 {
 	"name": "obsidian-pomodoro-timer",
 	"version": "1.0.0",
-	"description": "a pomodoro timer that helps manage your daily focus",
+	"description": "A pomodoro timer that helps manage your daily focus",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
