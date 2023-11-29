@@ -134,22 +134,6 @@ const updateBreakLen = (e: Event) => {
                         cy="17"
                         r="3" /><circle cx="7" cy="7" r="3" /></svg>
             </span>
-            <span on:click={reset} class="control">
-                <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    class="lucide lucide-rotate-ccw"
-                    ><path
-                        d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path
-                        d="M3 3v5h5" /></svg>
-            </span>
             {#if !$timer.running}
                 <span on:click={start} class="control">
                     <svg
@@ -185,6 +169,22 @@ const updateBreakLen = (e: Event) => {
                             y="4" /></svg>
                 </span>
             {/if}
+            <span on:click={reset} class="control">
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="lucide lucide-rotate-ccw"
+                    ><path
+                        d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path
+                        d="M3 3v5h5" /></svg>
+            </span>
         </div>
     </div>
     <div class="extra">

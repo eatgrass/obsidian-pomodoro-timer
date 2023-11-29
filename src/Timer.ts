@@ -234,6 +234,7 @@ const saveLog = async (log: TimerLog): Promise<void> => {
     if (settings.logFile === 'FILE') {
         let path = settings.logPath || settings.logPath.trim()
         if (path !== '') {
+            await ensureFolderExists(path)
             if (!(await $plugin!.app.vault.adapter.exists(path))) {
                 await $plugin!.app.vault.create(path, log.text())
             } else {
@@ -242,6 +243,41 @@ const saveLog = async (log: TimerLog): Promise<void> => {
         }
     }
 }
+
+const ensureFolderExists = async (path: string): Promise<void> => {
+    const dirs = path.replace(/\\/g, '/').split('/')
+    dirs.pop() // remove basename
+
+    if (dirs.length) {
+        const dir = join(...dirs)
+        if (!$plugin.app.vault.getAbstractFileByPath(dir)) {
+            await $plugin.app.vault.createFolder(dir)
+        }
+    }
+}
+
+const join = (...partSegments: string[]): string => {
+    // Split the inputs into a list of path commands.
+    let parts: string[] = []
+    for (let i = 0, l = partSegments.length; i < l; i++) {
+        parts = parts.concat(partSegments[i].split('/'))
+    }
+    // Interpret the path commands to get the new resolved path.
+    const newParts = []
+    for (let i = 0, l = parts.length; i < l; i++) {
+        const part = parts[i]
+        // Remove leading and trailing slashes
+        // Also remove "." segments
+        if (!part || part === '.') continue
+        // Push new path segments.
+        else newParts.push(part)
+    }
+    // Preserve the initial slash if there was one.
+    if (parts[0] === '') newParts.unshift('')
+    // Turn back into a single string path.
+    return newParts.join('/')
+}
+
 const getDailyNoteFile = async (): Promise<TFile> => {
     const file = getDailyNote(moment() as any, getAllDailyNotes())
     if (!file) {
