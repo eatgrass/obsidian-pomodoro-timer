@@ -12,7 +12,7 @@ This plugin integrates a customizable Pomodoro timer into your Obsidian workspac
 
 ## Screenshots
 
-![image](https://github.com/eatgrass/obsidian-pomodoro-timer/assets/2351076/c88352da-aeed-42f9-a307-60bf91db2754)
+![image](https://github.com/eatgrass/obsidian-pomodoro-timer/assets/2351076/67a0e6fd-6e3d-42b3-a42c-c56602f8135d)
 
 ## Examples of Using with DataView
 
