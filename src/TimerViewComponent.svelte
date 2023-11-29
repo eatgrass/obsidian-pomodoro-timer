@@ -96,8 +96,8 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                 class="control">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
+                    width="16"
+                    height="16"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -113,8 +113,8 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
             <span on:click={reset} class="control">
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="24"
-                    height="24"
+                    width="16"
+                    height="16"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -130,8 +130,8 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                 <span on:click={start} class="control">
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
+                        width="16"
+                        height="16"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -145,8 +145,8 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
                 <span on:click={pause} class="control">
                     <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        width="24"
-                        height="24"
+                        width="16"
+                        height="16"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -248,6 +248,7 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
 }
 
 .btn-group {
+    margin-top: 1rem;
     display: flex;
     justify-content: space-between;
     width: 160px;
@@ -265,7 +266,7 @@ const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
     opacity: 0.5;
 }
 .input-group {
-    margin-top: 1.5rem;
+    margin-top: 2.5rem;
     align-self: center;
     width: 100%;
 }
