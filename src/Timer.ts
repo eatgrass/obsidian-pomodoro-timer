@@ -1,6 +1,8 @@
 import { derived, writable, type Readable, type Writable } from 'svelte/store'
 import { settings, plugin } from 'stores'
 import { bell } from 'Bell'
+// @ts-ignore
+import Worker from 'timer.worker.ts'
 
 import {
     getDailyNote,
@@ -12,7 +14,7 @@ import moment, { type Moment } from 'moment'
 import type PomodoroTimerPlugin from 'main'
 
 let $plugin: PomodoroTimerPlugin
-
+let worker: Worker = Worker()
 plugin.subscribe((p) => ($plugin = p))
 const audio = new Audio(bell)
 
@@ -50,7 +52,7 @@ state.subscribe((s) => (running = s.running))
 
 interface TimerControl {
     start: () => void
-    tick: () => void
+    tick: (t: number) => void
     endSession: (state: TimerState) => TimerState
     reset: () => void
     pause: () => void
@@ -94,13 +96,14 @@ const methods: TimerControl = {
             s.lastTick = now
             s.inSession = true
             s.running = true
+            worker.postMessage(true)
             return s
         })
-        this.tick()
     },
     pause() {
         update((s) => {
             s.running = false
+            worker.postMessage(false)
             return s
         })
     },
@@ -110,6 +113,7 @@ const methods: TimerControl = {
             s.count = s.duration * 60 * 1000
             s.inSession = false
             s.running = false
+            worker.postMessage(false)
             s.startTime = null
             s.elapsed = 0
             return s
@@ -124,30 +128,25 @@ const methods: TimerControl = {
             return updated
         })
     },
-    tick() {
-        let nextTick: boolean = false
+    tick(t: number) {
+        let timeup: boolean = false
         let pause: boolean = false
         update((s) => {
             if (s.running && s.lastTick) {
-                let now = new Date().getTime()
-                let diff = Date.now() - s.lastTick
-                s.lastTick = now
+                let diff = t - s.lastTick
+                s.lastTick = t
                 s.elapsed += diff
                 if (s.elapsed >= s.count) {
                     s.elapsed = s.count
                 }
-                nextTick = s.elapsed < s.count
+                timeup = s.elapsed >= s.count
             } else {
                 pause = true
             }
             return s
         })
-        if (!pause) {
-            if (nextTick) {
-                requestAnimationFrame(this.tick)
-            } else {
-                this.timeup()
-            }
+        if (!pause && timeup) {
+            this.timeup()
         }
     },
     timeup() {
@@ -178,6 +177,7 @@ const methods: TimerControl = {
         s.count = s.duration * 60 * 1000
         s.inSession = false
         s.running = false
+        worker.postMessage(false)
         s.startTime = null
         s.elapsed = 0
         return s
@@ -334,4 +334,7 @@ export const remained: Readable<TimerRemained> = derived(
 
 export const store = state as TimerStore
 
+worker.onmessage = (({ data }: any) => {
+    store.tick(data as number)
+})
 export type Mode = 'WORK' | 'BREAK'
