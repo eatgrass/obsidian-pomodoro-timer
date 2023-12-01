@@ -11,7 +11,6 @@ import {
 } from 'obsidian-daily-notes-interface'
 import { Notice, type TFile, moment } from 'obsidian'
 import type PomodoroTimerPlugin from 'main'
-import { type Moment } from 'moment'
 
 let $plugin: PomodoroTimerPlugin
 let clock: Worker = Worker()
@@ -193,11 +192,16 @@ export class TimerLog {
         '(pomodoro::{mode}) (duration:: {duration}m) (begin:: {begin|YYYY-MM-DD HH:mm}) - (end:: {end|YYYY-MM-DD HH:mm})'
 
     duration: number
-    begin: Moment
-    end: Moment
+    begin: moment.Moment
+    end: moment.Moment
     mode: Mode
 
-    constructor(mode: Mode, duration: number, begin: Moment, end: Moment) {
+    constructor(
+        mode: Mode,
+        duration: number,
+        begin: moment.Moment,
+        end: moment.Moment,
+    ) {
         this.duration = duration
         this.begin = begin
         this.end = end
