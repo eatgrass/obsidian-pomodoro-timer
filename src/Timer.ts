@@ -2,19 +2,19 @@ import { derived, writable, type Readable, type Writable } from 'svelte/store'
 import { settings, plugin } from 'stores'
 import { bell } from 'Bell'
 // @ts-ignore
-import Worker from 'timer.worker.ts'
+import Worker from 'clock.worker'
 
 import {
     getDailyNote,
     createDailyNote,
     getAllDailyNotes,
 } from 'obsidian-daily-notes-interface'
-import { Notice, type TFile } from 'obsidian'
-import moment, { type Moment } from 'moment'
+import { Notice, type TFile, moment } from 'obsidian'
 import type PomodoroTimerPlugin from 'main'
+import { type Moment } from 'moment'
 
 let $plugin: PomodoroTimerPlugin
-let worker: Worker = Worker()
+let clock: Worker = Worker()
 plugin.subscribe((p) => ($plugin = p))
 const audio = new Audio(bell)
 
@@ -96,14 +96,14 @@ const methods: TimerControl = {
             s.lastTick = now
             s.inSession = true
             s.running = true
-            worker.postMessage(true)
+            clock.postMessage(true)
             return s
         })
     },
     pause() {
         update((s) => {
             s.running = false
-            worker.postMessage(false)
+            clock.postMessage(false)
             return s
         })
     },
@@ -113,7 +113,7 @@ const methods: TimerControl = {
             s.count = s.duration * 60 * 1000
             s.inSession = false
             s.running = false
-            worker.postMessage(false)
+            clock.postMessage(false)
             s.startTime = null
             s.elapsed = 0
             return s
@@ -177,7 +177,7 @@ const methods: TimerControl = {
         s.count = s.duration * 60 * 1000
         s.inSession = false
         s.running = false
-        worker.postMessage(false)
+        clock.postMessage(false)
         s.startTime = null
         s.elapsed = 0
         return s
@@ -302,10 +302,6 @@ const ring = () => {
     audio.play()
 }
 
-Object.keys(methods).forEach((name) => {
-    methods[name as keyof TimerControl].bind(state)
-})
-
 Object.keys(methods).forEach((key) => {
     let method = key as keyof TimerControl
     ;(state as any)[method] = methods[method].bind(state)
@@ -334,7 +330,7 @@ export const remained: Readable<TimerRemained> = derived(
 
 export const store = state as TimerStore
 
-worker.onmessage = (({ data }: any) => {
+clock.onmessage = ({ data }: any) => {
     store.tick(data as number)
-})
+}
 export type Mode = 'WORK' | 'BREAK'

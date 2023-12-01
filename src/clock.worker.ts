@@ -1,9 +1,9 @@
 let running: boolean = false
 
-const sendTick = (): void => {
+const tick = (): void => {
     if (running) {
         self.postMessage(new Date().getTime())
-        requestAnimationFrame(sendTick)
+        requestAnimationFrame(tick)
     }
 }
 
@@ -11,7 +11,7 @@ self.onmessage = async ({ data }) => {
     if (data) {
         if (!running) {
             running = true
-            sendTick()
+            tick()
         }
     } else {
         running = false

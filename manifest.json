@@ -1,11 +1,10 @@
 {
 	"id": "pomodoro-timer",
 	"name": "Pomodoro Timer",
-	"version": "1.0.1",
+	"version": "1.0.2",
 	"minAppVersion": "0.15.0",
 	"description": "A pomodoro timer that helps manage your daily focus",
 	"author": "eatgrass",
-	"repo": "eatgrass/obsidian-pomodoro-timer",
 	"fundingUrl": "https://www.buymeacoffee.com/eatgrass",
 	"authorUrl": "https://github.com/eatgrass",
 	"isDesktopOnly": false
