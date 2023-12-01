@@ -6,3 +6,8 @@ available in the app when your plugin is enabled.
 If your plugin does not need CSS, delete this file.
 
 */
+
+.status-bar-item.plugin-pomodoro-timer{
+    padding-top: 0;
+    padding-bottom: 0;
+}

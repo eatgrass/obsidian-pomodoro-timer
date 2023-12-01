@@ -3,7 +3,6 @@ import { settings, plugin } from 'stores'
 import { bell } from 'Bell'
 // @ts-ignore
 import Worker from 'clock.worker'
-
 import {
     getDailyNote,
     createDailyNote,
@@ -12,8 +11,9 @@ import {
 import { Notice, type TFile, moment } from 'obsidian'
 import type PomodoroTimerPlugin from 'main'
 
+export const clock: any = Worker()
+
 let $plugin: PomodoroTimerPlugin
-let clock: Worker = Worker()
 plugin.subscribe((p) => ($plugin = p))
 const audio = new Audio(bell)
 
@@ -231,6 +231,11 @@ export class TimerLog {
 
 const saveLog = async (log: TimerLog): Promise<void> => {
     const settings = $plugin!.getSettings()
+
+    if (settings.logLevel !== 'ALL' && settings.logLevel !== log.mode) {
+        return
+    }
+
     if (settings.logFile === 'DAILY') {
         let file = (await getDailyNoteFile()).path
         await appendFile(file, `\n${log.text()}`)
@@ -337,4 +342,5 @@ export const store = state as TimerStore
 clock.onmessage = ({ data }: any) => {
     store.tick(data as number)
 }
+
 export type Mode = 'WORK' | 'BREAK'

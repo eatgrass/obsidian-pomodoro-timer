@@ -9,6 +9,7 @@ export interface Settings {
     useStatusBarTimer: boolean
     logFile: 'DAILY' | 'FILE' | 'NONE'
     logPath: string
+    logLevel: 'ALL' | 'WORK' | 'BREAK'
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -18,6 +19,7 @@ export const DEFAULT_SETTINGS: Settings = {
     useStatusBarTimer: false,
     logFile: 'NONE',
     logPath: '',
+    logLevel: 'ALL',
 }
 
 export default class PomodoroSettings extends PluginSettingTab {
@@ -74,6 +76,7 @@ export default class PomodoroSettings extends PluginSettingTab {
             .setName('Log file')
             .setDesc('The file to log pomodoro sessions to')
             .addDropdown((dropdown) => {
+                dropdown.selectEl.style.width = '120px'
                 dropdown.addOptions({
                     NONE: 'None',
                     DAILY: 'Daily note',
@@ -86,12 +89,35 @@ export default class PomodoroSettings extends PluginSettingTab {
                         value === 'DAILY' ||
                         value === 'FILE'
                     ) {
-                        dropdown.setValue(this._settings.logFile)
+                        dropdown.setValue(value)
                         this.updateSettings({ logFile: value }, true)
                     }
                 })
             })
 
+        if (this._settings.logFile != 'NONE') {
+            new Setting(containerEl)
+                .setName('Log level')
+                .addDropdown((dropdown) => {
+                    dropdown.selectEl.style.width = '120px'
+                    dropdown.addOptions({
+                        ALL: 'All',
+                        WORK: 'Work',
+                        BREAK: 'Break',
+                    })
+                    dropdown.setValue(this._settings.logLevel)
+                    dropdown.onChange((value: string) => {
+                        if (
+                            value === 'ALL' ||
+                            value === 'WORK' ||
+                            value === 'BREAK'
+                        ) {
+                            dropdown.setValue(value)
+                            this.updateSettings({ logLevel: value })
+                        }
+                    })
+                })
+        }
         if (this._settings.logFile === 'FILE') {
             new Setting(containerEl)
                 .setName('Log file path')

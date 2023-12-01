@@ -3,7 +3,7 @@ import { Notice, Plugin, WorkspaceLeaf } from 'obsidian'
 import PomodoroSettings, { type Settings } from 'Settings'
 import stores from 'stores'
 import StatusBar from 'StatusBarComponent.svelte'
-import { store as timer } from 'Timer'
+import { store as timer, clock } from 'Timer'
 
 export default class PomodoroTimerPlugin extends Plugin {
     private settingTab?: PomodoroSettings
@@ -26,6 +26,7 @@ export default class PomodoroTimerPlugin extends Plugin {
 
         // status bar
         const status = this.addStatusBarItem()
+        status.className = `${status.className} mod-clickable`
         this.statusBar = new StatusBar({ target: status })
 
         // commands
@@ -80,8 +81,8 @@ export default class PomodoroTimerPlugin extends Plugin {
 
     onunload() {
         timer.pause()
+        clock.terminate()
     }
-
     async activateView() {
         let { workspace } = this.app
 

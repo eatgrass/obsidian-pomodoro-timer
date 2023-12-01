@@ -11,12 +11,12 @@ const toggleTimer = () => {
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 {#if $settings.useStatusBarTimer}
     <span on:click={toggleTimer} class="st-timer">
-        <span style="margin-right:3px">
+        <span style="margin-right:3px" class="item-icon">
             {#if $store.running}
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="12"
-                    height="12"
+                    width="16"
+                    height="16"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -32,8 +32,8 @@ const toggleTimer = () => {
             {:else}
                 <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    width="12"
-                    height="12"
+                    width="16"
+                    height="16"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -47,14 +47,16 @@ const toggleTimer = () => {
                         d="m2 2 20 20" /><path d="M12 12v-2" /></svg>
             {/if}
         </span>
-        {$remained.human}</span>
+        {$remained.human}
+    </span>
 {/if}
 
 <style>
-.st-timer {
-    cursor: pointer;
-    line-height: 1;
-    display: flex;
+.item-icon {
+    padding-top: 0;
+}
+.st-timer{
+    display: inline-flex;
     align-items: center;
 }
 </style>

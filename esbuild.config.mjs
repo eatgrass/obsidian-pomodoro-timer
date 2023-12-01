@@ -48,7 +48,9 @@ let inlineWorkerPlugin = {
                 return {
                     contents: `
                 export default function inlineWorker() {
-                    let blob = new Blob([${JSON.stringify(workerCode)}], {type: 'text/javascript'})
+                    let blob = new Blob([${JSON.stringify(
+                        workerCode,
+                    )}], {type: 'text/javascript'})
                     let url = URL.createObjectURL(blob)
                     let worker = ${
                         workerPath.includes('service')
