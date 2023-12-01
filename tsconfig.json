@@ -2,11 +2,11 @@
     "extends": "@tsconfig/svelte/tsconfig.json",
     "compilerOptions": {
         "types": ["svelte", "node"],
-        // "allowSyntheticDefaultImports": true,
         "baseUrl": "./src",
         "inlineSources": true,
         "module": "ESNext",
         "target": "ES6",
+        "esModuleInterop": false,
         "allowJs": true,
         "noImplicitAny": true,
         "moduleResolution": "node",
