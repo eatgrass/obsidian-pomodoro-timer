@@ -3,7 +3,7 @@ import { Notice, Plugin, WorkspaceLeaf } from 'obsidian'
 import PomodoroSettings, { type Settings } from 'Settings'
 import stores from 'stores'
 import StatusBar from 'StatusBarComponent.svelte'
-import { store as timer, clock, clean } from 'Timer'
+import { store as timer, clean } from 'Timer'
 
 export default class PomodoroTimerPlugin extends Plugin {
     private settingTab?: PomodoroSettings
@@ -80,7 +80,6 @@ export default class PomodoroTimerPlugin extends Plugin {
     onunload() {
         this.settingTab?.unload()
         clean()
-        clock.terminate()
     }
     async activateView() {
         let { workspace } = this.app

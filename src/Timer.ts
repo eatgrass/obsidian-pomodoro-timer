@@ -11,11 +11,19 @@ import {
 import { Notice, type TFile, moment } from 'obsidian'
 import type PomodoroTimerPlugin from 'main'
 
-export const clock: any = Worker()
+// background worker
+const clock: any = Worker()
+clock.onmessage = ({ data }: any) => {
+    store.tick(data as number)
+}
 
 let $plugin: PomodoroTimerPlugin
+
 const pluginUnsubribe = plugin.subscribe((p) => ($plugin = p))
+
 const audio = new Audio(bell)
+
+let running = false
 
 interface TimerState {
     autostart: boolean
@@ -29,6 +37,24 @@ interface TimerState {
     breakLen: number
     count: number
     duration: number
+}
+
+interface TimerControl {
+    start: () => void
+    tick: (t: number) => void
+    endSession: (state: TimerState) => TimerState
+    reset: () => void
+    pause: () => void
+    timeup: () => void
+    toggleMode: (callback?: (state: TimerState) => void) => void
+    toggleTimer: () => void
+}
+
+export type TimerStore = Writable<TimerState> & TimerControl
+
+export type TimerRemained = {
+    millis: number
+    human: string
 }
 
 const state: Writable<TimerState> | TimerStore = writable({
@@ -45,22 +71,7 @@ const state: Writable<TimerState> | TimerStore = writable({
     duration: 25,
 })
 
-let running = false
-
 const stateUnsubribe = state.subscribe((s) => (running = s.running))
-
-interface TimerControl {
-    start: () => void
-    tick: (t: number) => void
-    endSession: (state: TimerState) => TimerState
-    reset: () => void
-    pause: () => void
-    timeup: () => void
-    toggleMode: (callback?: (state: TimerState) => void) => void
-    toggleTimer: () => void
-}
-
-export type TimerStore = Writable<TimerState> & TimerControl
 
 const { update } = state
 
@@ -182,13 +193,21 @@ const methods: TimerControl = {
         return s
     },
 }
+
+Object.keys(methods).forEach((key) => {
+    let method = key as keyof TimerControl
+    ;(state as any)[method] = methods[method].bind(state)
+})
+
+
+// session log
 export class TimerLog {
     static EMOJI: Record<Mode, string> = {
         WORK: '🍅',
         BREAK: '🥤',
     }
 
-    static template: string =
+    static readonly template: string =
         '(pomodoro::{mode}) (duration:: {duration}m) (begin:: {begin|YYYY-MM-DD HH:mm}) - (end:: {end|YYYY-MM-DD HH:mm})'
 
     duration: number
@@ -229,17 +248,23 @@ export class TimerLog {
     }
 }
 
+/* Util Functions */
+
 const saveLog = async (log: TimerLog): Promise<void> => {
     const settings = $plugin!.getSettings()
 
+	// filter log level
     if (settings.logLevel !== 'ALL' && settings.logLevel !== log.mode) {
         return
     }
 
+	// log to DailyNote
     if (settings.logFile === 'DAILY') {
         let file = (await getDailyNoteFile()).path
         await appendFile(file, `\n${log.text()}`)
     }
+
+	// log to file
     if (settings.logFile === 'FILE') {
         let path = settings.logPath || settings.logPath.trim()
         if (path !== '') {
@@ -252,6 +277,7 @@ const saveLog = async (log: TimerLog): Promise<void> => {
         }
     }
 }
+
 
 const ensureFolderExists = async (path: string): Promise<void> => {
     const dirs = path.replace(/\\/g, '/').split('/')
@@ -311,16 +337,6 @@ const ring = () => {
     audio.play()
 }
 
-Object.keys(methods).forEach((key) => {
-    let method = key as keyof TimerControl
-    ;(state as any)[method] = methods[method].bind(state)
-})
-
-export type TimerRemained = {
-    millis: number
-    human: string
-}
-
 export const remained: Readable<TimerRemained> = derived(
     state as Writable<TimerState>,
     ($state) => {
@@ -339,10 +355,6 @@ export const remained: Readable<TimerRemained> = derived(
 
 export const store = state as TimerStore
 
-clock.onmessage = ({ data }: any) => {
-    store.tick(data as number)
-}
-
 export type Mode = 'WORK' | 'BREAK'
 
 export const clean = () => {
@@ -350,4 +362,5 @@ export const clean = () => {
     settingsUnsubsribe()
     pluginUnsubribe()
     stateUnsubribe()
+	clock.terminate()
 }
