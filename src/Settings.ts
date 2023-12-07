@@ -1,5 +1,6 @@
 import type PomodoroTimerPlugin from 'main'
 import { PluginSettingTab, Setting } from 'obsidian'
+import type { Unsubscriber } from 'svelte/motion'
 import { writable, type Writable } from 'svelte/store'
 
 export interface Settings {
@@ -12,31 +13,33 @@ export interface Settings {
     logLevel: 'ALL' | 'WORK' | 'BREAK'
 }
 
-export const DEFAULT_SETTINGS: Settings = {
-    workLen: 25,
-    breakLen: 5,
-    autostart: false,
-    useStatusBarTimer: false,
-    logFile: 'NONE',
-    logPath: '',
-    logLevel: 'ALL',
-}
-
 export default class PomodoroSettings extends PluginSettingTab {
+    static readonly DEFAULT_SETTINGS: Settings = {
+        workLen: 25,
+        breakLen: 5,
+        autostart: false,
+        useStatusBarTimer: false,
+        logFile: 'NONE',
+        logPath: '',
+        logLevel: 'ALL',
+    }
+
+    static settings: Writable<Settings> = writable(
+        PomodoroSettings.DEFAULT_SETTINGS,
+    )
+
     private _settings: Settings
 
     private plugin: PomodoroTimerPlugin
 
-    static settings: Writable<Settings> = writable<Settings>(DEFAULT_SETTINGS)
-
-    static DEFAULT_SETTINGS = DEFAULT_SETTINGS
+    private unsubscribe: Unsubscriber
 
     constructor(plugin: PomodoroTimerPlugin, settings: Settings) {
         super(plugin.app, plugin)
         this.plugin = plugin
-        this._settings = { ...DEFAULT_SETTINGS, ...settings }
+        this._settings = { ...PomodoroSettings.DEFAULT_SETTINGS, ...settings }
         PomodoroSettings.settings.set(this._settings)
-        PomodoroSettings.settings.subscribe((settings) => {
+        this.unsubscribe = PomodoroSettings.settings.subscribe((settings) => {
             this.plugin.saveData(settings)
             this._settings = settings
         })
@@ -57,6 +60,10 @@ export default class PomodoroSettings extends PluginSettingTab {
             }
             return this._settings
         })
+    }
+
+    public unload() {
+        this.unsubscribe()
     }
 
     public display() {
@@ -118,6 +125,7 @@ export default class PomodoroSettings extends PluginSettingTab {
                     })
                 })
         }
+
         if (this._settings.logFile === 'FILE') {
             new Setting(containerEl)
                 .setName('Log file path')
@@ -134,7 +142,7 @@ export default class PomodoroSettings extends PluginSettingTab {
         new Setting(containerEl).addButton((button) => {
             button.setButtonText('Restore settings')
             button.onClick(() => {
-                this.updateSettings(DEFAULT_SETTINGS, true)
+                this.updateSettings(PomodoroSettings.DEFAULT_SETTINGS, true)
             })
         })
     }

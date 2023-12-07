@@ -14,7 +14,7 @@ import type PomodoroTimerPlugin from 'main'
 export const clock: any = Worker()
 
 let $plugin: PomodoroTimerPlugin
-plugin.subscribe((p) => ($plugin = p))
+const pluginUnsubribe = plugin.subscribe((p) => ($plugin = p))
 const audio = new Audio(bell)
 
 interface TimerState {
@@ -47,7 +47,7 @@ const state: Writable<TimerState> | TimerStore = writable({
 
 let running = false
 
-state.subscribe((s) => (running = s.running))
+const stateUnsubribe = state.subscribe((s) => (running = s.running))
 
 interface TimerControl {
     start: () => void
@@ -64,7 +64,7 @@ export type TimerStore = Writable<TimerState> & TimerControl
 
 const { update } = state
 
-settings.subscribe(($settings) => {
+const settingsUnsubsribe = settings.subscribe(($settings) => {
     update((state) => {
         state.workLen = $settings.workLen
         state.breakLen = $settings.breakLen
@@ -344,3 +344,10 @@ clock.onmessage = ({ data }: any) => {
 }
 
 export type Mode = 'WORK' | 'BREAK'
+
+export const clean = () => {
+    store.pause()
+    settingsUnsubsribe()
+    pluginUnsubribe()
+    stateUnsubribe()
+}
