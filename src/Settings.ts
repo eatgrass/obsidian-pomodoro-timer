@@ -117,6 +117,20 @@ export default class PomodoroSettings extends PluginSettingTab {
             })
 
         if (this._settings.logFile != 'NONE') {
+
+            if (this._settings.logFile === 'FILE') {
+                new Setting(containerEl)
+                    .setName('Log file path')
+                    .setDesc('The file to log pomodoro sessions to')
+                    .addText((text) => {
+                        text.inputEl.style.width = '300px'
+                        text.setValue(this._settings.logPath)
+                        text.onChange((value) => {
+                            this.updateSettings({ logPath: value })
+                        })
+                    })
+            }
+
             new Setting(containerEl)
                 .setName('Log level')
                 .addDropdown((dropdown) => {
@@ -136,7 +150,7 @@ export default class PomodoroSettings extends PluginSettingTab {
 
             let example = ''
             if (this._settings.logFormat == 'SIMPLE') {
-                example = `**WORK(25 m)**: from ${moment()
+                example = `**WORK(25m)**: from ${moment()
                     .subtract(25, 'minutes')
                     .format('HH:mm')} - ${moment().format('HH:mm')}`
             }
@@ -208,19 +222,6 @@ export default class PomodoroSettings extends PluginSettingTab {
                         })
                 }
             }
-        }
-
-        if (this._settings.logFile === 'FILE') {
-            new Setting(containerEl)
-                .setName('Log file path')
-                .setDesc('The file to log pomodoro sessions to')
-                .addText((text) => {
-                    text.inputEl.style.width = '300px'
-                    text.setValue(this._settings.logPath)
-                    text.onChange((value) => {
-                        this.updateSettings({ logPath: value })
-                    })
-                })
         }
 
         new Setting(containerEl).addButton((button) => {

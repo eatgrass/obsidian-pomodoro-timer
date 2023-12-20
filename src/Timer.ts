@@ -270,7 +270,7 @@ export class TimerLog {
             if (settings.logFormat === 'SIMPLE') {
                 return `**${this.mode}(${
                     this.duration
-                } m)**: from ${this.begin.format('HH:mm')} - ${this.end.format(
+                }m)**: from ${this.begin.format('HH:mm')} - ${this.end.format(
                     'HH:mm',
                 )}`
             }
