@@ -5,6 +5,8 @@ import { store } from 'Timer'
 export const VIEW_TYPE_TIMER = 'timer-view'
 
 export class TimerView extends ItemView {
+    private component?: TimerComponent
+
     constructor(leaf: WorkspaceLeaf) {
         super(leaf)
         this.icon = 'timer'
@@ -19,7 +21,7 @@ export class TimerView extends ItemView {
     }
 
     async onOpen() {
-        new TimerComponent({
+        this.component = new TimerComponent({
             target: this.contentEl,
             props: {
                 timer: store,
@@ -27,5 +29,7 @@ export class TimerView extends ItemView {
         })
     }
 
-    async onClose() {}
+    async onClose() {
+        this.component?.$destroy()
+    }
 }
