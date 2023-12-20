@@ -315,6 +315,9 @@ const saveLog = async (log: TimerLog): Promise<void> => {
     if (settings.logFile === 'FILE') {
         let path = settings.logPath || settings.logPath.trim()
         if (path) {
+            if (!path.endsWith('.md')) {
+                path += '.md'
+            }
             await ensureFolderExists(path)
             let text = await log.text(path)
             if (text) {

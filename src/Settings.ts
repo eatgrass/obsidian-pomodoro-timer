@@ -174,7 +174,7 @@ export default class PomodoroSettings extends PluginSettingTab {
                 if (hasTemplater) {
                     logTemplate.addTextArea((text) => {
                         text.inputEl.style.width = '100%'
-						text.inputEl.style.resize = 'vertical'
+                        text.inputEl.style.resize = 'vertical'
                         text.setValue(this._settings.logTemplate)
 
                         text.onChange((value) => {
