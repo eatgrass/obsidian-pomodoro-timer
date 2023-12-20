@@ -1,5 +1,7 @@
 <h1 align="center">Pomodoro Timer for Obsidian</h1>
 
+![image](https://github.com/eatgrass/obsidian-pomodoro-timer/assets/2351076/f2f4f339-ba66-423f-b6a5-79fe91e13ef0)
+
 ## Introduction
 
 This plugin integrates a customizable Pomodoro timer into your Obsidian workspace, helping you focus and manage your time effectively.
@@ -64,10 +66,6 @@ if (log.mode == "WORK") {
 }
 %>
 ```
-
-## Screenshots
-
-![image](https://github.com/eatgrass/obsidian-pomodoro-timer/assets/2351076/f2f4f339-ba66-423f-b6a5-79fe91e13ef0)
 
 ## Examples of Using with DataView
 
