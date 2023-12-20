@@ -4,7 +4,7 @@ import { type TimerStore, remained } from 'Timer'
 export let timer: TimerStore
 
 let extra: 'settings' | 'logs' | 'close' = 'close'
-const offset = 440
+const offset = 600
 
 const strokeColor = '#6fdb6f'
 $: strokeOffset = ($remained.millis * offset) / $timer.count
@@ -281,9 +281,9 @@ const updateBreakLen = (e: Event) => {
     display: inline-block;
 }
 .circle_animation {
-    stroke-dasharray: 440; /* this value is the pixel circumference of the circle */
-    stroke-dashoffset: 440;
-    transition: all 0.25s linear;
+    stroke-dasharray: 600; /* this value is the pixel circumference of the circle */
+    stroke-dashoffset: 600;
+    /* transition: all 0.2s linear; */
 }
 
 .btn-group {

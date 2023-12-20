@@ -228,9 +228,6 @@ export class TimerLog {
         BREAK: '🥤',
     }
 
-    static readonly template: string =
-        '(pomodoro::{mode}) (duration:: {duration}m) (begin:: {begin|YYYY-MM-DD HH:mm}) - (end:: {end|YYYY-MM-DD HH:mm})'
-
     duration: number
     begin: moment.Moment
     end: moment.Moment
@@ -254,14 +251,9 @@ export class TimerLog {
     async text(path: string): Promise<string> {
         const settings = $plugin!.getSettings()
 
-        let template = TimerLog.template
-        let emoji = TimerLog.EMOJI[this.mode]
-
-        let line = ''
-
-        if (settings.logTemplate && getTemplater($plugin.app)) {
+        if (settings.logFormat === 'CUSTOM' && getTemplater($plugin.app)) {
             // use templater
-            line = await parseWithTemplater(
+            return await parseWithTemplater(
                 $plugin.app,
                 path,
                 settings.logTemplate,
@@ -275,28 +267,25 @@ export class TimerLog {
                 return ''
             }
 
-        return '(pomodoro::{mode}) (duration:: {duration}m) (begin:: {begin|YYYY-MM-DD HH:mm}) - (end:: {end|YYYY-MM-DD HH:mm})'
-            line = template
-                ? template.replace(
-                      /\{(.*?)}/g,
-                      (_, expression: string): string => {
-                          let [key, format]: string[] = expression
-                              .split('|')
-                              .map((part: string) => part.trim())
-                          let value = this[key as keyof TimerLog]
+            if (settings.logFormat === 'SIMPLE') {
+                return `**${this.mode}(${
+                    this.duration
+                } m)**: from ${this.begin.format('HH:mm')} - ${this.end.format(
+                    'HH:mm',
+                )}`
+            }
 
-                          // Check if the value is a moment object and a format is provided
-                          if (moment.isMoment(value) && format) {
-                              return value.format(format)
-                          }
-                          return value.toString()
-                      },
-                  )
-                : ''
-            line = line ? `- ${emoji} ${line}` : ''
+            if (settings.logFormat === 'VERBOSE') {
+                let emoji = TimerLog.EMOJI[this.mode]
+                return `- ${emoji}(pomodoro::${this.mode}) (duration:: ${
+                    this.duration
+                }m) (begin:: ${this.begin.format(
+                    'YYYY-MM-DD HH:mm',
+                )}) - (end:: ${this.end.format('YYYY-MM-DD HH:mm')})`
+            }
+
+            return ''
         }
-
-        return line
     }
 }
 
@@ -305,8 +294,11 @@ export class TimerLog {
 const saveLog = async (log: TimerLog): Promise<void> => {
     const settings = $plugin!.getSettings()
 
-    // filter log level
-    if (settings.logLevel !== 'ALL' && settings.logLevel !== log.mode) {
+    // filter log
+    if (
+        settings.logFile == 'NONE' ||
+        (settings.logLevel !== 'ALL' && settings.logLevel !== log.mode)
+    ) {
         return
     }
 

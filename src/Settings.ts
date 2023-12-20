@@ -3,6 +3,7 @@ import { PluginSettingTab, Setting } from 'obsidian'
 import type { Unsubscriber } from 'svelte/motion'
 import { writable, type Writable } from 'svelte/store'
 import { getTemplater } from 'utils'
+import { moment } from 'obsidian'
 
 type LogFileType = 'DAILY' | 'FILE' | 'NONE'
 type LogLevel = 'ALL' | 'WORK' | 'BREAK'
@@ -133,8 +134,22 @@ export default class PomodoroSettings extends PluginSettingTab {
 
             const hasTemplater = !!getTemplater(this.app)
 
+            let example = ''
+            if (this._settings.logFormat == 'SIMPLE') {
+                example = `**WORK(25 m)**: from ${moment()
+                    .subtract(25, 'minutes')
+                    .format('HH:mm')} - ${moment().format('HH:mm')}`
+            }
+            if (this._settings.logFormat == 'VERBOSE') {
+                example = `- 🍅 (pomodoro::WORK) (duration:: 25m) (begin:: ${moment()
+                    .subtract(25, 'minutes')
+                    .format('YYYY-MM-DD HH:mm')}) - (end:: ${moment().format(
+                    'YYYY-MM-DD HH:mm',
+                )})`
+            }
             new Setting(containerEl)
                 .setName('Log format')
+                .setDesc(example)
                 .addDropdown((dropdown) => {
                     dropdown.selectEl.style.width = '120px'
                     dropdown.addOptions({
@@ -159,6 +174,7 @@ export default class PomodoroSettings extends PluginSettingTab {
                 if (hasTemplater) {
                     logTemplate.addTextArea((text) => {
                         text.inputEl.style.width = '100%'
+						text.inputEl.style.resize = 'vertical'
                         text.setValue(this._settings.logTemplate)
 
                         text.onChange((value) => {
