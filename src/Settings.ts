@@ -2,6 +2,7 @@ import type PomodoroTimerPlugin from 'main'
 import { PluginSettingTab, Setting } from 'obsidian'
 import type { Unsubscriber } from 'svelte/motion'
 import { writable, type Writable } from 'svelte/store'
+import { getTemplater } from 'utils'
 
 export interface Settings {
     workLen: number
@@ -11,6 +12,7 @@ export interface Settings {
     logFile: 'DAILY' | 'FILE' | 'NONE'
     logPath: string
     logLevel: 'ALL' | 'WORK' | 'BREAK'
+    logTemplate: string
 }
 
 export default class PomodoroSettings extends PluginSettingTab {
@@ -22,6 +24,7 @@ export default class PomodoroSettings extends PluginSettingTab {
         logFile: 'NONE',
         logPath: '',
         logLevel: 'ALL',
+        logTemplate: '',
     }
 
     static settings: Writable<Settings> = writable(
@@ -124,6 +127,21 @@ export default class PomodoroSettings extends PluginSettingTab {
                         }
                     })
                 })
+
+            const logTemplate = new Setting(containerEl).setName('Log template')
+
+            if (getTemplater(this.app)) {
+                logTemplate.addTextArea((text) => {
+					text.inputEl.style.width = '100%'
+                    text.setValue(this._settings.logTemplate)
+
+                    text.onChange((value) => {
+                        this.updateSettings({ logTemplate: value })
+                    })
+                })
+            } else {
+				logTemplate.setDesc('Requires Templater plugin to be enabled.')
+			}
         }
 
         if (this._settings.logFile === 'FILE') {

@@ -10,6 +10,7 @@ import {
 } from 'obsidian-daily-notes-interface'
 import { Notice, type TFile, moment } from 'obsidian'
 import type PomodoroTimerPlugin from 'main'
+import { parseWithTemplater, getTemplater } from 'utils'
 
 // background worker
 const clock: any = Worker()
@@ -119,6 +120,18 @@ const methods: TimerControl = {
     },
     reset() {
         update((s) => {
+
+            if (s.elapsed > 0) {
+                const log = new TimerLog(
+                    s.mode,
+                    Math.floor(s.elapsed / 60000),
+                    moment(s.startTime),
+                    moment(),
+                    s.duration,
+                )
+                saveLog(log)
+            }
+
             s.duration = s.mode == 'WORK' ? s.workLen : s.breakLen
             s.count = s.duration * 60 * 1000
             s.inSession = false
@@ -162,14 +175,15 @@ const methods: TimerControl = {
     timeup() {
         let autostart = false
         update((s) => {
-            let log = new TimerLog(
+            const log = new TimerLog(
                 s.mode,
-                s.duration,
+                Math.floor(s.elapsed / 60000),
                 moment(s.startTime),
                 moment(),
+                s.duration,
             )
-            notify(log)
             saveLog(log)
+            notify(log)
             autostart = s.autostart
             return this.endSession(s)
         })
@@ -178,6 +192,7 @@ const methods: TimerControl = {
         }
     },
     endSession(s: TimerState) {
+        // setup new session
         if (s.breakLen == 0) {
             s.mode = 'WORK'
         } else {
@@ -199,6 +214,13 @@ Object.keys(methods).forEach((key) => {
     ;(state as any)[method] = methods[method].bind(state)
 })
 
+export type Log = {
+    duration: number
+    session: number
+    begin: moment.Moment
+    end: moment.Moment
+    mode: Mode
+}
 
 // session log
 export class TimerLog {
@@ -214,37 +236,61 @@ export class TimerLog {
     begin: moment.Moment
     end: moment.Moment
     mode: Mode
+    session: number
 
     constructor(
         mode: Mode,
         duration: number,
         begin: moment.Moment,
         end: moment.Moment,
+        session: number,
     ) {
         this.duration = duration
         this.begin = begin
         this.end = end
         this.mode = mode
+        this.session = session
     }
 
-    text(): string {
+    async text(path: string): Promise<string> {
+        const settings = $plugin!.getSettings()
+
         let template = TimerLog.template
         let emoji = TimerLog.EMOJI[this.mode]
-        let line = template
-            ? template.replace(/\{(.*?)}/g, (_, expression: string): string => {
-                  let [key, format]: string[] = expression
-                      .split('|')
-                      .map((part: string) => part.trim())
-                  let value = this[key as keyof TimerLog] || ''
 
-                  // Check if the value is a moment object and a format is provided
-                  if (moment.isMoment(value) && format) {
-                      return value.format(format)
-                  }
-                  return (value as string) || ''
-              })
-            : ''
-        return `- ${emoji} ${line}`
+        let line = ''
+
+        if (settings.logTemplate && getTemplater($plugin.app)) {
+            // use templater
+            line = await parseWithTemplater(
+                $plugin.app,
+                path,
+                settings.logTemplate,
+                this,
+            )
+        } else {
+            // use default logger
+            line = template
+                ? template.replace(
+                      /\{(.*?)}/g,
+                      (_, expression: string): string => {
+                          let [key, format]: string[] = expression
+                              .split('|')
+                              .map((part: string) => part.trim())
+                          let value = this[key as keyof TimerLog] || ''
+
+                          // Check if the value is a moment object and a format is provided
+                          if (moment.isMoment(value) && format) {
+                              return value.format(format)
+                          }
+                          return (value as string) || ''
+                      },
+                  )
+                : ''
+            line = line ? `- ${emoji} ${line}` : ''
+        }
+
+        return line
     }
 }
 
@@ -253,31 +299,32 @@ export class TimerLog {
 const saveLog = async (log: TimerLog): Promise<void> => {
     const settings = $plugin!.getSettings()
 
-	// filter log level
+    // filter log level
     if (settings.logLevel !== 'ALL' && settings.logLevel !== log.mode) {
         return
     }
 
-	// log to DailyNote
+    // log to DailyNote
     if (settings.logFile === 'DAILY') {
-        let file = (await getDailyNoteFile()).path
-        await appendFile(file, `\n${log.text()}`)
+        let path = (await getDailyNoteFile()).path
+        let text = await log.text(path)
+        await appendFile(path, `\n${text}`)
     }
 
-	// log to file
+    // log to file
     if (settings.logFile === 'FILE') {
         let path = settings.logPath || settings.logPath.trim()
-        if (path !== '') {
+        if (path) {
             await ensureFolderExists(path)
+            let text = await log.text(path)
             if (!(await $plugin!.app.vault.adapter.exists(path))) {
-                await $plugin!.app.vault.create(path, log.text())
+                await $plugin!.app.vault.create(path, text)
             } else {
-                await appendFile(path, `\n${log.text()}`)
+                await appendFile(path, `\n${text}`)
             }
         }
     }
 }
-
 
 const ensureFolderExists = async (path: string): Promise<void> => {
     const dirs = path.replace(/\\/g, '/').split('/')
@@ -362,5 +409,5 @@ export const clean = () => {
     settingsUnsubsribe()
     pluginUnsubribe()
     stateUnsubribe()
-	clock.terminate()
+    clock.terminate()
 }
