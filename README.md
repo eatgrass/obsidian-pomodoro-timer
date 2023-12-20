@@ -20,14 +20,14 @@ This plugin integrates a customizable Pomodoro timer into your Obsidian workspac
 The standard log formats are as follows
 For those requiring more detailed logging, consider setting up a custom [log template](#Custom Log Template) as described below.
 
-**SIMPLE**
+**Simple**
 
 ```
-**WORK(25 m)**: from 20:16 - 20:17
-**BREAK(25 m)**: from 20:16 - 20:17
+**WORK(25m)**: from 20:16 - 20:17
+**BREAK(25m)**: from 20:16 - 20:17
 ```
 
-**VERBOSE**
+**Verbose**
 
 ```plain
 - 🍅 (pomodoro::WORK) (duration:: 25m) (begin:: 2023-12-20 15:57) - (end:: 2023-12-20 15:58)
