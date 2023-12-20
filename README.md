@@ -1,14 +1,60 @@
 <h1 align="center">Pomodoro Timer for Obsidian</h1>
 
 ## Introduction
+
 This plugin integrates a customizable Pomodoro timer into your Obsidian workspace, helping you focus and manage your time effectively.
 
 ## Features
 
-- **Customizable Timer**: Set your work and break intervals to suit your productivity style.
-- **Audible Alerts**: Stay on track with audio notifications signaling the end of each session.
-- **Status Bar Display**: Monitor your progress directly from Obsidian's status bar to keep focusing.
-- **Daily Note Integration**: Automatically log your sessions in your daily notes for better tracking.
+-   **Customizable Timer**: Set your work and break intervals to suit your productivity style.
+-   **Audible Alerts**: Stay on track with audio notifications signaling the end of each session.
+-   **Status Bar Display**: Monitor your progress directly from Obsidian's status bar to keep focusing.
+-   **Daily Note Integration**: Automatically log your sessions in your daily notes for better tracking.
+
+## Log
+
+### Default Log
+
+The standard log format is as follows, and it's important to note that logging **only occurs once a session is complete.**
+For those requiring more detailed logging, consider setting up a custom [log template](#Custom Log Template) as described below.
+
+```plain
+- 🍅 (pomodoro::WORK) (duration:: 1m) (begin:: 2023-12-20 15:57) - (end:: 2023-12-20 15:58)
+- 🥤 (pomodoro::BREAK) (duration:: 1m) (begin:: 2023-12-20 16:06) - (end:: 2023-12-20 16:07)
+```
+
+### Custom Log Template (Optional)
+
+1. Install the [Templater](https://github.com/SilentVoid13/Templater) plugin.
+2. Compose your log template using the `log` object, which stores session information.
+
+```json
+{
+	duration: number,  // duratin in minutes
+	session: number,   // session length
+	finished: boolean, // if the session is finished?
+	mode: string,      // 'WORK' or 'BREAK'
+	begin: Moment,     // start time
+	end: Moment        // end time
+}
+```
+here is an example
+
+```javascript
+<%*
+if (log.mode == "WORK") {
+  if (!log.finished) {
+    tR = `🟡 Focused ${log.duration} / ${log.session} minutes`;
+  } else {
+    tR = `🍅 Focused ${log.duration} / minutes`;
+  }
+} else {
+  tR = `☕️ Took a break from ${log.begin.format("HH:mm")} to ${log.end.format(
+    "HH:mm"
+  )}`;
+}
+%>
+```
 
 ## Screenshots
 
@@ -21,7 +67,6 @@ This plugin integrates a customizable Pomodoro timer into your Obsidian workspac
 This DataView script generates a table showing Pomodoro sessions with their durations, start, and end times.
 
 ![image](https://github.com/eatgrass/obsidian-pomodoro-timer/assets/2351076/ebcf33ac-291e-4659-ab03-93bfbe1c79d3)
-
 
 <pre>
 ```dataviewjs
@@ -82,12 +127,13 @@ Enhance your tasks with Pomodoro logs as sublists. Each entry details the type o
 
 ```markdown
 # add logs as sublist of your task
-- [ ] My Awesome Task
-    - 🍅 (pomodoro::WORK) (duration:: 1m) (begin:: 2023-11-29 13:58) - (end:: 2023-11-29 14:01)
-    - 🥤 (pomodoro::BREAK) (duration:: 22m) (begin:: 2023-11-29 13:36) - (end:: 2023-11-29 14:01)
-    - 🥤 (pomodoro::BREAK) (duration:: 22m) (begin:: 2023-11-29 13:38) - (end:: 2023-11-29 14:01)
-    - 🍅 (pomodoro::WORK) (duration:: 1m) (begin:: 2023-11-29 14:01) - (end:: 2023-11-29 14:03)
-    - 🍅 (pomodoro::WORK) (duration:: 1m) (begin:: 2023-11-29 14:01) - (end:: 2023-11-29 14:03)
+
+-   [ ] My Awesome Task
+    -   🍅 (pomodoro::WORK) (duration:: 1m) (begin:: 2023-11-29 13:58) - (end:: 2023-11-29 14:01)
+    -   🥤 (pomodoro::BREAK) (duration:: 22m) (begin:: 2023-11-29 13:36) - (end:: 2023-11-29 14:01)
+    -   🥤 (pomodoro::BREAK) (duration:: 22m) (begin:: 2023-11-29 13:38) - (end:: 2023-11-29 14:01)
+    -   🍅 (pomodoro::WORK) (duration:: 1m) (begin:: 2023-11-29 14:01) - (end:: 2023-11-29 14:03)
+    -   🍅 (pomodoro::WORK) (duration:: 1m) (begin:: 2023-11-29 14:01) - (end:: 2023-11-29 14:03)
 ```
 
 ![image](https://github.com/eatgrass/obsidian-pomodoro-timer/assets/2351076/2c0c9852-fd86-4390-8519-7cb3a049ec28)
@@ -113,4 +159,5 @@ dv.table(
 )
 ```
 </pre>
+
 [<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="BuyMeACoffee" width="100">](https://www.buymeacoffee.com/eatgrass)

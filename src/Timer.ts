@@ -268,7 +268,14 @@ export class TimerLog {
                 this,
             )
         } else {
-            // use default logger
+            // default use a simple log
+            console.log(this.duration)
+
+            if (this.duration != this.session) {
+                return ''
+            }
+
+        return '(pomodoro::{mode}) (duration:: {duration}m) (begin:: {begin|YYYY-MM-DD HH:mm}) - (end:: {end|YYYY-MM-DD HH:mm})'
             line = template
                 ? template.replace(
                       /\{(.*?)}/g,
@@ -276,13 +283,13 @@ export class TimerLog {
                           let [key, format]: string[] = expression
                               .split('|')
                               .map((part: string) => part.trim())
-                          let value = this[key as keyof TimerLog] || ''
+                          let value = this[key as keyof TimerLog]
 
                           // Check if the value is a moment object and a format is provided
                           if (moment.isMoment(value) && format) {
                               return value.format(format)
                           }
-                          return (value as string) || ''
+                          return value.toString()
                       },
                   )
                 : ''
@@ -307,7 +314,9 @@ const saveLog = async (log: TimerLog): Promise<void> => {
     if (settings.logFile === 'DAILY') {
         let path = (await getDailyNoteFile()).path
         let text = await log.text(path)
-        await appendFile(path, `\n${text}`)
+        if (text) {
+            await appendFile(path, `\n${text}`)
+        }
     }
 
     // log to file
@@ -316,10 +325,12 @@ const saveLog = async (log: TimerLog): Promise<void> => {
         if (path) {
             await ensureFolderExists(path)
             let text = await log.text(path)
-            if (!(await $plugin!.app.vault.adapter.exists(path))) {
-                await $plugin!.app.vault.create(path, text)
-            } else {
-                await appendFile(path, `\n${text}`)
+            if (text) {
+                if (!(await $plugin!.app.vault.adapter.exists(path))) {
+                    await $plugin!.app.vault.create(path, text)
+                } else {
+                    await appendFile(path, `\n${text}`)
+                }
             }
         }
     }

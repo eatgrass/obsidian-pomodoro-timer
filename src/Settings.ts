@@ -4,15 +4,20 @@ import type { Unsubscriber } from 'svelte/motion'
 import { writable, type Writable } from 'svelte/store'
 import { getTemplater } from 'utils'
 
+type LogFileType = 'DAILY' | 'FILE' | 'NONE'
+type LogLevel = 'ALL' | 'WORK' | 'BREAK'
+type LogFormat = 'SIMPLE' | 'VERBOSE' | 'CUSTOM'
+
 export interface Settings {
     workLen: number
     breakLen: number
     autostart: boolean
     useStatusBarTimer: boolean
-    logFile: 'DAILY' | 'FILE' | 'NONE'
+    logFile: LogFileType
     logPath: string
-    logLevel: 'ALL' | 'WORK' | 'BREAK'
+    logLevel: LogLevel
     logTemplate: string
+    logFormat: LogFormat
     useSystemNotification: boolean
 }
 
@@ -26,6 +31,7 @@ export default class PomodoroSettings extends PluginSettingTab {
         logPath: '',
         logLevel: 'ALL',
         logTemplate: '',
+        logFormat: 'VERBOSE',
         useSystemNotification: false,
     }
 
@@ -105,14 +111,7 @@ export default class PomodoroSettings extends PluginSettingTab {
                 })
                 dropdown.setValue(this._settings.logFile)
                 dropdown.onChange((value: string) => {
-                    if (
-                        value === 'NONE' ||
-                        value === 'DAILY' ||
-                        value === 'FILE'
-                    ) {
-                        dropdown.setValue(value)
-                        this.updateSettings({ logFile: value }, true)
-                    }
+                    this.updateSettings({ logFile: value as LogFileType }, true)
                 })
             })
 
@@ -128,30 +127,70 @@ export default class PomodoroSettings extends PluginSettingTab {
                     })
                     dropdown.setValue(this._settings.logLevel)
                     dropdown.onChange((value: string) => {
-                        if (
-                            value === 'ALL' ||
-                            value === 'WORK' ||
-                            value === 'BREAK'
-                        ) {
-                            dropdown.setValue(value)
-                            this.updateSettings({ logLevel: value })
-                        }
+                        this.updateSettings({ logLevel: value as LogLevel })
                     })
                 })
 
-            const logTemplate = new Setting(containerEl).setName('Log template')
+            const hasTemplater = !!getTemplater(this.app)
 
-            if (getTemplater(this.app)) {
-                logTemplate.addTextArea((text) => {
-                    text.inputEl.style.width = '100%'
-                    text.setValue(this._settings.logTemplate)
+            new Setting(containerEl)
+                .setName('Log format')
+                .addDropdown((dropdown) => {
+                    dropdown.selectEl.style.width = '120px'
+                    dropdown.addOptions({
+                        SIMPLE: 'Simple',
+                        VERBOSE: 'Verbose',
+                        CUSTOM: 'Custom',
+                    })
+                    dropdown.setValue(this._settings.logFormat)
 
-                    text.onChange((value) => {
-                        this.updateSettings({ logTemplate: value })
+                    dropdown.onChange((value: string) => {
+                        this.updateSettings(
+                            { logFormat: value as LogFormat },
+                            true,
+                        )
                     })
                 })
-            } else {
-                logTemplate.setDesc('Requires Templater plugin to be enabled.')
+
+            if (this._settings.logFormat == 'CUSTOM') {
+                const logTemplate = new Setting(containerEl).setName(
+                    'Log template',
+                )
+                if (hasTemplater) {
+                    logTemplate.addTextArea((text) => {
+                        text.inputEl.style.width = '100%'
+                        text.setValue(this._settings.logTemplate)
+
+                        text.onChange((value) => {
+                            this.updateSettings({ logTemplate: value })
+                        })
+                    })
+                } else {
+                    logTemplate
+                        .setDesc(
+                            createFragment((fragment) => {
+                                const text1 = document.createElement('span')
+                                text1.setText('Requires ')
+                                text1.style.color = 'var(--text-error)'
+                                const a = document.createElement('a')
+                                a.setText('Templater')
+                                a.href =
+                                    'obsidian://show-plugin?id=templater-obsidian'
+                                const text2 = document.createElement('span')
+                                text2.setText(
+                                    ' plugin to be enabled, then click the refresh button',
+                                )
+                                text2.style.color = 'var(--text-error)'
+                                fragment.append(text1, a, text2)
+                            }),
+                        )
+                        .addButton((button) => {
+                            button.setIcon('refresh-ccw')
+                            button.onClick(() => {
+                                this.display()
+                            })
+                        })
+                }
             }
         }
 
