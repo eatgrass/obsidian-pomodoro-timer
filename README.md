@@ -23,8 +23,8 @@ For those requiring more detailed logging, consider setting up a custom [log tem
 **Simple**
 
 ```
-**WORK(25m)**: from 20:16 - 20:17
-**BREAK(25m)**: from 20:16 - 20:17
+**WORK(25m)**: 20:16 - 20:17
+**BREAK(25m)**: 20:16 - 20:17
 ```
 
 **Verbose**
