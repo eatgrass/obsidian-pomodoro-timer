@@ -13,6 +13,7 @@ export interface Settings {
     logPath: string
     logLevel: 'ALL' | 'WORK' | 'BREAK'
     logTemplate: string
+    useSystemNotification: boolean
 }
 
 export default class PomodoroSettings extends PluginSettingTab {
@@ -25,6 +26,7 @@ export default class PomodoroSettings extends PluginSettingTab {
         logPath: '',
         logLevel: 'ALL',
         logTemplate: '',
+        useSystemNotification: false,
     }
 
     static settings: Writable<Settings> = writable(
@@ -83,6 +85,15 @@ export default class PomodoroSettings extends PluginSettingTab {
             })
 
         new Setting(containerEl)
+            .setName('Use system notification')
+            .addToggle((toggle) => {
+                toggle.setValue(this._settings.useSystemNotification)
+                toggle.onChange((value) => {
+                    this.updateSettings({ useSystemNotification: value })
+                })
+            })
+
+        new Setting(containerEl)
             .setName('Log file')
             .setDesc('The file to log pomodoro sessions to')
             .addDropdown((dropdown) => {
@@ -132,7 +143,7 @@ export default class PomodoroSettings extends PluginSettingTab {
 
             if (getTemplater(this.app)) {
                 logTemplate.addTextArea((text) => {
-					text.inputEl.style.width = '100%'
+                    text.inputEl.style.width = '100%'
                     text.setValue(this._settings.logTemplate)
 
                     text.onChange((value) => {
@@ -140,8 +151,8 @@ export default class PomodoroSettings extends PluginSettingTab {
                     })
                 })
             } else {
-				logTemplate.setDesc('Requires Templater plugin to be enabled.')
-			}
+                logTemplate.setDesc('Requires Templater plugin to be enabled.')
+            }
         }
 
         if (this._settings.logFile === 'FILE') {

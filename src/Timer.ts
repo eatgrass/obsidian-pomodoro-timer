@@ -120,7 +120,6 @@ const methods: TimerControl = {
     },
     reset() {
         update((s) => {
-
             if (s.elapsed > 0) {
                 const log = new TimerLog(
                     s.mode,
@@ -376,8 +375,22 @@ const notify = (log: TimerLog) => {
     const text = `${TimerLog.EMOJI[log.mode]} You have been ${
         log.mode === 'WORK' ? 'working' : 'breaking'
     } for ${log.duration} minutes.`
+
+    if ($plugin.getSettings().useSystemNotification) {
+        const Notification = (require('electron') as any).remote.Notification
+        const n = new Notification({
+            title: 'Pomodoro Timer',
+            body: text,
+            silent: true,
+        })
+        n.on('click', () => {
+            n.close()
+        })
+        n.show()
+    } else {
+        new Notice(`${text}`)
+    }
     ring()
-    new Notice(`${text}`)
 }
 
 const ring = () => {
