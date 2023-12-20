@@ -57,7 +57,7 @@ if (log.mode == "WORK") {
   if (!log.finished) {
     tR = `🟡 Focused ${log.duration} / ${log.session} minutes`;
   } else {
-    tR = `🍅 Focused ${log.duration} / minutes`;
+    tR = `🍅 Focused ${log.duration} minutes`;
   }
 } else {
   tR = `☕️ Took a break from ${log.begin.format("HH:mm")} to ${log.end.format(
