@@ -37,7 +37,7 @@ For those requiring more detailed logging, consider setting up a custom [log tem
 1. Install the [Templater](https://github.com/SilentVoid13/Templater) plugin.
 2. Compose your log template using the `log` object, which stores session information.
 
-```json
+```javascript
 {
 	duration: number,  // duratin in minutes
 	session: number,   // session length
