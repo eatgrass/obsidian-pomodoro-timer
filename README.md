@@ -168,8 +168,6 @@ dv.table(
 ```
 </pre>
 
-[<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="BuyMeACoffee" width="100">](https://www.buymeacoffee.com/eatgrass)
-
 ## CSS Variables
 
 | Variable                       | Default            |
@@ -178,3 +176,7 @@ dv.table(
 | --pomodoro-timer-elapsed-color | var(--color-green) |
 | --pomodoro-timer-text-color    | var(--text-normal) |
 | --pomodoro-timer-dot-color     | var(--color-ted)   |
+
+* * *
+
+[<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="BuyMeACoffee" width="150">](https://www.buymeacoffee.com/eatgrass)
