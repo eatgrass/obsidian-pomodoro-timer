@@ -7,7 +7,15 @@ If your plugin does not need CSS, delete this file.
 
 */
 
-.status-bar-item.plugin-pomodoro-timer{
+.theme-light,
+.theme-dark {
+    --pomodoro-timer-elapsed-color: var(--color-green);
+    --pomodoro-timer-color: var(--text-faint);
+    --pomodoro-timer-text-color: var(--text-normal);
+    --pomodoro-timer-dot-color: var(--color-red);
+}
+
+.status-bar-item.plugin-pomodoro-timer {
     padding-top: 0;
     padding-bottom: 0;
 }

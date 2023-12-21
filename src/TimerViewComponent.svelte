@@ -6,7 +6,6 @@ export let timer: TimerStore
 let extra: 'settings' | 'logs' | 'close' = 'close'
 const offset = 440
 
-const strokeColor = '#6fdb6f'
 $: strokeOffset = ($remained.millis * offset) / $timer.count
 
 const start = () => {
@@ -72,17 +71,21 @@ const updateBreakLen = (e: Event) => {
     <div class="main">
         <div class="timer">
             <div class="timer-display">
-                <div class="status control" on:click={toggleMode}>
+                <div
+                    class="status {$timer.inSession ? '' : 'control'}"
+                    on:click={toggleMode}
+                >
                     {#if $timer.running}<span class="breath"></span>{/if}
                     {#if $timer.mode === 'WORK'}
-                        <span class="control mode">Work</span>
+                        <span class="mode">Work</span>
                     {:else}
-                        <span class="control mode">Break</span>
+                        <span class="mode">Break</span>
                     {/if}
                     <span></span>
+
                 </div>
                 <div on:click={toggleTimer} class="control">
-                    <h2>
+                    <h2 class="timer-text">
                         {$remained.human}
                     </h2>
                 </div>
@@ -95,11 +98,11 @@ const updateBreakLen = (e: Event) => {
             >
                 <g>
                     <circle
+                        class="circle_timer"
                         r="69.85699"
                         cy="81"
                         cx="81"
                         stroke-width="2"
-                        stroke="#333"
                         fill="none"
                     />
                     <circle
@@ -108,7 +111,6 @@ const updateBreakLen = (e: Event) => {
                         cy="81"
                         cx="81"
                         stroke-width="8"
-                        stroke={strokeColor}
                         fill="none"
                         style="stroke-dashoffset: {strokeOffset}"
                     />
@@ -247,7 +249,6 @@ const updateBreakLen = (e: Event) => {
     flex-direction: column;
     align-items: center;
     z-index: 2;
-    background: var(--background-secondary);
 }
 .timer {
     position: relative;
@@ -260,6 +261,7 @@ const updateBreakLen = (e: Event) => {
     transform: rotate(-90deg);
     z-index: 3;
 }
+
 .timer-display {
     position: absolute;
     width: 100%;
@@ -272,6 +274,10 @@ const updateBreakLen = (e: Event) => {
     z-index: 4;
     padding: 30px;
 }
+
+.timer-text {
+    color: var(--pomodoro-timer-text-color);
+}
 .status {
     font-size: 0.7rem;
     display: flex;
@@ -280,9 +286,14 @@ const updateBreakLen = (e: Event) => {
 .status span {
     display: inline-block;
 }
+.circle_timer {
+    stroke: var(--pomodoro-timer-color);
+}
+
 .circle_animation {
     stroke-dasharray: 440; /* this value is the pixel circumference of the circle */
     stroke-dashoffset: 440;
+    stroke: var(--pomodoro-timer-elapsed-color);
     /* transition: all 0.2s linear; */
 }
 
@@ -329,14 +340,16 @@ const updateBreakLen = (e: Event) => {
 .breath {
     width: 5px;
     height: 5px;
+	margin-top: 5px;
     display: inline-block;
     position: absolute;
     left: 55px;
-    background-color: #ff4500;
+    background-color: var(--pomodoro-timer-dot-color);
     border-radius: 5px;
     transform: translate(-50%, -50%);
-    animation: blink 2s linear infinite;
+    animation: blink 1s linear infinite;
 }
+
 .extra {
     width: 100%;
     margin-top: 1rem;

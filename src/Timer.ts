@@ -143,6 +143,9 @@ const methods: TimerControl = {
     },
     toggleMode(callback?: (state: TimerState) => void) {
         update((s) => {
+            if (s.inSession) {
+                return s
+            }
             let updated = this.endSession(s)
             if (callback) {
                 callback(updated)
