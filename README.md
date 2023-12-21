@@ -49,6 +49,7 @@ For those requiring more detailed logging, consider setting up a custom [log tem
 	end: Moment        // end time
 }
 ```
+
 here is an example
 
 ```javascript
@@ -168,3 +169,12 @@ dv.table(
 </pre>
 
 [<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="BuyMeACoffee" width="100">](https://www.buymeacoffee.com/eatgrass)
+
+## CSS Variables
+
+| Variable                       | Default            |
+| ------------------------------ | ------------------ |
+| --pomodoro-timer-color         | var(--text-faint)  |
+| --pomodoro-timer-elapsed-color | var(--color-green) |
+| --pomodoro-timer-text-color    | var(--text-normal) |
+| --pomodoro-timer-dot-color     | var(--color-ted)   |
