@@ -3,16 +3,16 @@ import { Notice, Plugin, WorkspaceLeaf } from 'obsidian'
 import PomodoroSettings, { type Settings } from 'Settings'
 import stores from 'stores'
 import StatusBar from 'StatusBarComponent.svelte'
-import { store as timer, clean } from 'Timer'
+import { store as timer, clean, playSound } from 'Timer'
 
 export default class PomodoroTimerPlugin extends Plugin {
     private settingTab?: PomodoroSettings
 
     async onload() {
-        const settings = await this.loadData()
-
         // init svelte stores
         stores.plugin.set(this)
+
+        const settings = await this.loadData()
 
         this.settingTab = new PomodoroSettings(this, settings)
         this.addSettingTab(this.settingTab)
@@ -75,6 +75,10 @@ export default class PomodoroTimerPlugin extends Plugin {
         return (
             this.settingTab?.getSettings() || PomodoroSettings.DEFAULT_SETTINGS
         )
+    }
+
+    public async playSound() {
+        playSound()
     }
 
     onunload() {

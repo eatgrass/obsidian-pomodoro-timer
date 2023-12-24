@@ -14,6 +14,8 @@ export interface Settings {
     breakLen: number
     autostart: boolean
     useStatusBarTimer: boolean
+    notificationSound: boolean
+    customSound: string
     logFile: LogFileType
     logPath: string
     logLevel: LogLevel
@@ -28,6 +30,8 @@ export default class PomodoroSettings extends PluginSettingTab {
         breakLen: 5,
         autostart: false,
         useStatusBarTimer: false,
+        notificationSound: true,
+        customSound: '',
         logFile: 'NONE',
         logPath: '',
         logLevel: 'ALL',
@@ -91,6 +95,10 @@ export default class PomodoroSettings extends PluginSettingTab {
                 })
             })
 
+        // const notificationHeader = document.createElement("h2")
+        // notificationHeader.setText("Notification")
+        new Setting(containerEl).setHeading().setName('Notification')
+
         new Setting(containerEl)
             .setName('Use system notification')
             .addToggle((toggle) => {
@@ -99,10 +107,36 @@ export default class PomodoroSettings extends PluginSettingTab {
                     this.updateSettings({ useSystemNotification: value })
                 })
             })
+        new Setting(containerEl)
+            .setName('Notification sound')
+            .addToggle((toggle) => {
+                toggle.setValue(this._settings.notificationSound)
+                toggle.onChange((value) => {
+                    this.updateSettings({ notificationSound: value })
+                })
+            })
 
         new Setting(containerEl)
+            .setName('Custom sound')
+            .addText((text) => {
+                text.inputEl.style.width = '100%'
+                text.setPlaceholder('path/to/sound.mp3')
+                text.setValue(this._settings.customSound)
+                text.onChange((value) => {
+                    this.updateSettings({ customSound: value })
+                })
+            })
+            .addExtraButton((button) => {
+                button.setIcon('play')
+                button.setTooltip('play')
+                button.onClick(() => {
+                    this.plugin.playSound()
+                })
+            })
+
+        new Setting(containerEl).setHeading().setName('Log')
+        new Setting(containerEl)
             .setName('Log file')
-            .setDesc('The file to log pomodoro sessions to')
             .addDropdown((dropdown) => {
                 dropdown.selectEl.style.width = '120px'
                 dropdown.addOptions({
@@ -117,7 +151,6 @@ export default class PomodoroSettings extends PluginSettingTab {
             })
 
         if (this._settings.logFile != 'NONE') {
-
             if (this._settings.logFile === 'FILE') {
                 new Setting(containerEl)
                     .setName('Log file path')
