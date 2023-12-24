@@ -1,6 +1,6 @@
 import { derived, writable, type Readable, type Writable } from 'svelte/store'
 import { settings, plugin } from 'stores'
-import { bell } from 'Bell'
+import DEFAULT_NOTIFICATION from 'Notification'
 // @ts-ignore
 import Worker from 'clock.worker'
 import {
@@ -8,7 +8,7 @@ import {
     createDailyNote,
     getAllDailyNotes,
 } from 'obsidian-daily-notes-interface'
-import { Notice, type TFile, moment } from 'obsidian'
+import { Notice, TFile, moment } from 'obsidian'
 import type PomodoroTimerPlugin from 'main'
 import { parseWithTemplater, getTemplater } from 'utils'
 
@@ -22,7 +22,7 @@ let $plugin: PomodoroTimerPlugin
 
 const pluginUnsubribe = plugin.subscribe((p) => ($plugin = p))
 
-const audio = new Audio(bell)
+let audio = new Audio(DEFAULT_NOTIFICATION)
 
 let running = false
 
@@ -81,10 +81,21 @@ const settingsUnsubsribe = settings.subscribe(($settings) => {
         state.workLen = $settings.workLen
         state.breakLen = $settings.breakLen
         state.autostart = $settings.autostart
+
         if (!state.running && !state.inSession) {
             state.duration =
                 state.mode == 'WORK' ? state.workLen : state.breakLen
             state.count = state.duration * 60 * 1000
+        }
+
+        if ($settings.customSound) {
+            const soundFile = $plugin?.app.vault.getAbstractFileByPath(
+                $settings.customSound,
+            )
+            if (soundFile && soundFile instanceof TFile) {
+                const soundSrc = $plugin?.app.vault.getResourcePath(soundFile)
+                audio = new Audio(soundSrc)
+            }
         }
         return state
     })
@@ -264,7 +275,6 @@ export class TimerLog {
             )
         } else {
             // default use a simple log
-            console.log(this.duration)
 
             if (this.duration != this.session) {
                 return ''
@@ -399,10 +409,13 @@ const notify = (log: TimerLog) => {
     } else {
         new Notice(`${text}`)
     }
-    ring()
+
+    if ($plugin.getSettings().notificationSound) {
+        playSound()
+    }
 }
 
-const ring = () => {
+export const playSound = () => {
     audio.play()
 }
 
