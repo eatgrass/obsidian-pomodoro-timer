@@ -20,7 +20,13 @@ export default class PomodoroTimerPlugin extends Plugin {
 
         // ribbon
         this.addRibbonIcon('timer', 'Toggle timer panel', () => {
-            this.activateView()
+            let { workspace } = this.app
+            let leaves = workspace.getLeavesOfType(VIEW_TYPE_TIMER)
+            if (leaves.length > 0) {
+                workspace.detachLeavesOfType(VIEW_TYPE_TIMER)
+            } else {
+                this.activateView()
+            }
         })
 
         // status bar

@@ -1,20 +1,22 @@
 <script lang="ts">
-import { store, remained } from 'Timer'
+import { store, remained, type Mode } from 'Timer'
 import { settings } from 'stores'
 import { setTooltip, Menu } from 'obsidian'
-import { onMount } from 'svelte'
 
 let statusbar: HTMLElement
+let mode: Mode | undefined
 
 const toggleTimer = () => {
     store.toggleTimer()
 }
 
-onMount(() => {
-    if (statusbar) {
-        setTooltip(statusbar, $store.mode, { delay: 300, placement: 'top' })
+$: {
+    if (statusbar && mode !== $store.mode) {
+        mode = $store.mode
+        const tooltip = mode === 'WORK' ? 'Work' : 'Break'
+        setTooltip(statusbar, tooltip, { delay: 300, placement: 'top' })
     }
-})
+}
 
 const ctxMenu = (e: MouseEvent) => {
     const menu = new Menu()
@@ -38,11 +40,33 @@ const ctxMenu = (e: MouseEvent) => {
     menu.addItem((item) => {
         const mode = `Switch ${$store.mode === 'WORK' ? 'Break' : 'Work'} `
         item.setTitle(mode)
-        if ($store.running) {
-            item.setDisabled(true)
-        }
+        item.setDisabled($store.running || $store.inSession)
         item.onClick(() => {
             store.toggleMode()
+        })
+    })
+
+    menu.addSeparator()
+
+    menu.addItem((item) => {
+        item.setTitle('Auto-start')
+        item.setChecked($settings.autostart)
+        item.onClick(() => {
+            settings.update((s) => {
+                s.autostart = !s.autostart
+                return s
+            })
+        })
+    })
+
+    menu.addItem((item) => {
+        item.setTitle('Sound')
+        item.setChecked($settings.notificationSound)
+        item.onClick(() => {
+            settings.update((s) => {
+                s.notificationSound = !s.notificationSound
+                return s
+            })
         })
     })
 
