@@ -82,7 +82,6 @@ const updateBreakLen = (e: Event) => {
                         <span class="mode">Break</span>
                     {/if}
                     <span></span>
-
                 </div>
                 <div on:click={toggleTimer} class="control">
                     <h2 class="timer-text">
@@ -230,6 +229,14 @@ const updateBreakLen = (e: Event) => {
                         bind:checked={$settings.autostart}
                     />
                 </div>
+                <div class="input">
+                    <label for="pomodoro-break-len">Sound</label>
+                    <input
+                        id="pomodoro-auto-start"
+                        type="checkbox"
+                        bind:checked={$settings.notificationSound}
+                    />
+                </div>
             </div>
         {/if}
     </div>
@@ -340,7 +347,7 @@ const updateBreakLen = (e: Event) => {
 .breath {
     width: 5px;
     height: 5px;
-	margin-top: 5px;
+    margin-top: 5px;
     display: inline-block;
     position: absolute;
     left: 55px;

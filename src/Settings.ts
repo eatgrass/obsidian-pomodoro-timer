@@ -95,8 +95,6 @@ export default class PomodoroSettings extends PluginSettingTab {
                 })
             })
 
-        // const notificationHeader = document.createElement("h2")
-        // notificationHeader.setText("Notification")
         new Setting(containerEl).setHeading().setName('Notification')
 
         new Setting(containerEl)
@@ -112,43 +110,43 @@ export default class PomodoroSettings extends PluginSettingTab {
             .addToggle((toggle) => {
                 toggle.setValue(this._settings.notificationSound)
                 toggle.onChange((value) => {
-                    this.updateSettings({ notificationSound: value })
+                    this.updateSettings({ notificationSound: value }, true)
                 })
             })
 
-        new Setting(containerEl)
-            .setName('Custom sound')
-            .addText((text) => {
-                text.inputEl.style.width = '100%'
-                text.setPlaceholder('path/to/sound.mp3')
-                text.setValue(this._settings.customSound)
-                text.onChange((value) => {
-                    this.updateSettings({ customSound: value })
+        if (this._settings.notificationSound) {
+            new Setting(containerEl)
+                .setName('Custom sound')
+                .addText((text) => {
+                    text.inputEl.style.width = '100%'
+                    text.setPlaceholder('path/to/sound.mp3')
+                    text.setValue(this._settings.customSound)
+                    text.onChange((value) => {
+                        this.updateSettings({ customSound: value })
+                    })
                 })
-            })
-            .addExtraButton((button) => {
-                button.setIcon('play')
-                button.setTooltip('play')
-                button.onClick(() => {
-                    this.plugin.playSound()
+                .addExtraButton((button) => {
+                    button.setIcon('play')
+                    button.setTooltip('play')
+                    button.onClick(() => {
+                        this.plugin.playSound()
+                    })
                 })
-            })
+        }
 
         new Setting(containerEl).setHeading().setName('Log')
-        new Setting(containerEl)
-            .setName('Log file')
-            .addDropdown((dropdown) => {
-                dropdown.selectEl.style.width = '120px'
-                dropdown.addOptions({
-                    NONE: 'None',
-                    DAILY: 'Daily note',
-                    FILE: 'File',
-                })
-                dropdown.setValue(this._settings.logFile)
-                dropdown.onChange((value: string) => {
-                    this.updateSettings({ logFile: value as LogFileType }, true)
-                })
+        new Setting(containerEl).setName('Log file').addDropdown((dropdown) => {
+            dropdown.selectEl.style.width = '120px'
+            dropdown.addOptions({
+                NONE: 'None',
+                DAILY: 'Daily note',
+                FILE: 'File',
             })
+            dropdown.setValue(this._settings.logFile)
+            dropdown.onChange((value: string) => {
+                this.updateSettings({ logFile: value as LogFileType }, true)
+            })
+        })
 
         if (this._settings.logFile != 'NONE') {
             if (this._settings.logFile === 'FILE') {
