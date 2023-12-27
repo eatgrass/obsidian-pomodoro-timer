@@ -5,7 +5,7 @@ import { writable, type Writable } from 'svelte/store'
 import { getTemplater } from 'utils'
 import { moment } from 'obsidian'
 
-type LogFileType = 'DAILY' | 'FILE' | 'NONE'
+type LogFileType = 'ACTIVE' | 'DAILY' | 'FILE' | 'NONE'
 type LogLevel = 'ALL' | 'WORK' | 'BREAK'
 type LogFormat = 'SIMPLE' | 'VERBOSE' | 'CUSTOM'
 
@@ -141,6 +141,7 @@ export default class PomodoroSettings extends PluginSettingTab {
                 NONE: 'None',
                 DAILY: 'Daily note',
                 FILE: 'File',
+                ACTIVE: 'File Active at Start'
             })
             dropdown.setValue(this._settings.logFile)
             dropdown.onChange((value: string) => {

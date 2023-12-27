@@ -38,6 +38,7 @@ interface TimerState {
     breakLen: number
     count: number
     duration: number
+    startedFile: TFile
 }
 
 interface TimerControl {
@@ -70,6 +71,7 @@ const state: Writable<TimerState> | TimerStore = writable({
     breakLen: 5,
     count: 25 * 60 * 1000,
     duration: 25,
+    startedFile: null
 })
 
 const stateUnsubribe = state.subscribe((s) => (running = s.running))
@@ -118,6 +120,7 @@ const methods: TimerControl = {
             s.lastTick = now
             s.inSession = true
             s.running = true
+            s.startedFile = $plugin!.app.workspace.getActiveFile()
             clock.postMessage(true)
             return s
         })
@@ -139,7 +142,7 @@ const methods: TimerControl = {
                     moment(),
                     s.duration,
                 )
-                saveLog(log)
+                saveLog(log, s.startedFile)
             }
 
             s.duration = s.mode == 'WORK' ? s.workLen : s.breakLen
@@ -195,7 +198,7 @@ const methods: TimerControl = {
                 moment(),
                 s.duration,
             )
-            saveLog(log)
+            saveLog(log, s.startedFile)
             notify(log)
             autostart = s.autostart
             return this.endSession(s)
@@ -304,7 +307,7 @@ export class TimerLog {
 
 /* Util Functions */
 
-const saveLog = async (log: TimerLog): Promise<void> => {
+const saveLog = async (log: TimerLog, startedFile?: TFile): Promise<void> => {
     const settings = $plugin!.getSettings()
 
     // filter log
@@ -340,6 +343,20 @@ const saveLog = async (log: TimerLog): Promise<void> => {
                     await appendFile(path, `\n${text}`)
                 }
             }
+        }
+    }
+
+    // log to file active at start
+    if (settings.logFile === 'ACTIVE') {
+        let path = startedFile.path
+
+        if (!(path && path.endsWith('.md'))) {
+            path = (await getDailyNoteFile()).path // fallback to DailyNote
+        }
+
+        let text = await log.text(path)
+        if (text) {
+            await appendFile(path, `\n${text}`)
         }
     }
 }

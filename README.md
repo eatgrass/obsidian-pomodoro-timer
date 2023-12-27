@@ -11,10 +11,18 @@ This plugin integrates a customizable Pomodoro timer into your Obsidian workspac
 -   **Customizable Timer**: Set your work and break intervals to suit your productivity style.
 -   **Audible Alerts**: Stay on track with audio notifications signaling the end of each session.
 -   **Status Bar Display**: Monitor your progress directly from Obsidian's status bar to keep focusing.
--   **Daily Note Integration**: Automatically log your sessions in your daily notes for better tracking.
+-   **Daily Note Integration**: Automatically log your sessions in your daily notes (or any other file) for better tracking.
 
 ## Log
 
+### Log path
+You can choose the logging location:
+
+- **Daily note**: a periodic note as created by the Daily Note plugin.
+- **File**: any Markdown-file of your choice.
+- **File Active at Start**: a Markdown-file that was active (open) at the time the timer started (if such a file is absent, the log will be recorded in the Daily note).
+
+The last option can be used for logging into files associated with different activities. For instance, when you have separate files for different projects that you use to track corresponding tasks and overall progress.
 ### Log Format
 
 The standard log formats are as follows
