@@ -387,7 +387,8 @@ const getDailyNoteFile = async (): Promise<TFile> => {
 }
 
 const appendFile = async (filePath: string, logText: string): Promise<void> => {
-    await $plugin!.app.vault.adapter.append(filePath, logText)
+    const tfile = $plugin!.app.vault.getAbstractFileByPath(filePath)
+    await $plugin!.app.vault.append(tfile, logText)
 }
 
 const notify = (log: TimerLog) => {
