@@ -13,6 +13,16 @@ This plugin integrates a customizable Pomodoro timer into your Obsidian workspac
 -   **Status Bar Display**: Monitor your progress directly from Obsidian's status bar to keep focusing.
 -   **Daily Note Integration**: Automatically log your sessions in your daily notes for better tracking.
 
+## Notification
+
+### Custom Notification Sound
+
+1. Put the audio file into your vault.
+2. Set its path ralative to the vault's root.
+   For example: your audio file is in `AudioFiles` and named `notification.mp3`, your path would be `AudioFiles/notification.mp3`.
+   **Don't forget the file extension (like `.mp3`, `.wav` etc.).**
+3. Click the `play` button next to the path to verify the audio
+
 ## Log
 
 ### Log Format
@@ -177,6 +187,6 @@ dv.table(
 | --pomodoro-timer-text-color    | var(--text-normal) |
 | --pomodoro-timer-dot-color     | var(--color-ted)   |
 
-* * *
+---
 
 [<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="BuyMeACoffee" width="150">](https://www.buymeacoffee.com/eatgrass)

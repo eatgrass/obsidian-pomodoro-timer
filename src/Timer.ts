@@ -22,7 +22,7 @@ let $plugin: PomodoroTimerPlugin
 
 const pluginUnsubribe = plugin.subscribe((p) => ($plugin = p))
 
-let audio = new Audio(DEFAULT_NOTIFICATION)
+let DEFAULT_NOTIFICATION_AUDIO = new Audio(DEFAULT_NOTIFICATION)
 
 let running = false
 
@@ -88,15 +88,6 @@ const settingsUnsubsribe = settings.subscribe(($settings) => {
             state.count = state.duration * 60 * 1000
         }
 
-        if ($settings.customSound) {
-            const soundFile = $plugin?.app.vault.getAbstractFileByPath(
-                $settings.customSound,
-            )
-            if (soundFile && soundFile instanceof TFile) {
-                const soundSrc = $plugin?.app.vault.getResourcePath(soundFile)
-                audio = new Audio(soundSrc)
-            }
-        }
         return state
     })
 })
@@ -388,7 +379,11 @@ const getDailyNoteFile = async (): Promise<TFile> => {
 
 const appendFile = async (filePath: string, logText: string): Promise<void> => {
     const tfile = $plugin!.app.vault.getAbstractFileByPath(filePath)
-    await $plugin!.app.vault.append(tfile, logText)
+    if (tfile && tfile instanceof TFile) {
+        await $plugin!.app.vault.append(tfile, logText)
+    } else {
+        new Notice(`log file not found: ${filePath}`)
+    }
 }
 
 const notify = (log: TimerLog) => {
@@ -417,6 +412,15 @@ const notify = (log: TimerLog) => {
 }
 
 export const playSound = () => {
+    let audio = DEFAULT_NOTIFICATION_AUDIO
+    let customSound = $plugin.getSettings().customSound
+    if (customSound) {
+        const soundFile = $plugin?.app.vault.getAbstractFileByPath(customSound)
+        if (soundFile && soundFile instanceof TFile) {
+            const soundSrc = $plugin?.app.vault.getResourcePath(soundFile)
+            audio = new Audio(soundSrc)
+        }
+    }
     audio.play()
 }
 
