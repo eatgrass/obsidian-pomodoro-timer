@@ -44,6 +44,7 @@ interface TimerState {
     count: number
     duration: number
     task?: Task
+    pinTask: boolean
 }
 
 interface TimerControl {
@@ -55,6 +56,7 @@ interface TimerControl {
     timeup: () => void
     toggleMode: (callback?: (state: TimerState) => void) => void
     toggleTimer: () => void
+    togglePin: () => void
 }
 
 export type TimerStore = Writable<TimerState> & TimerControl
@@ -77,6 +79,7 @@ const state: Writable<TimerState> | TimerStore = writable({
     count: 25 * 60 * 1000,
     duration: 25,
     task: undefined,
+    pinTask: false,
 })
 
 const stateUnsubribe = state.subscribe((s) => (running = s.running))
@@ -127,7 +130,9 @@ const methods: TimerControl = {
                 s.duration = s.mode === 'WORK' ? s.workLen : s.breakLen
                 s.count = s.duration * 60 * 1000
                 s.startTime = now
-                s.task = resolveFocused(task)
+                if (!s.pinTask) {
+                    s.task = resolveFocused(task)
+                }
             }
             s.lastTick = now
             s.inSession = true
@@ -164,6 +169,7 @@ const methods: TimerControl = {
             clock.postMessage(false)
             s.startTime = null
             s.elapsed = 0
+            s.pinTask = false
             return s
         })
     },
@@ -235,6 +241,12 @@ const methods: TimerControl = {
         s.startTime = null
         s.elapsed = 0
         return s
+    },
+    togglePin() {
+        update((s) => {
+            s.pinTask = !s.pinTask
+            return s
+        })
     },
 }
 
@@ -310,7 +322,7 @@ export class TimerLog {
 
             if (settings.logFormat === 'VERBOSE') {
                 let emoji = TimerLog.EMOJI[this.mode]
-                return `- ${emoji}(pomodoro::${this.mode}) (duration:: ${
+                return `- ${emoji} (pomodoro::${this.mode}) (duration:: ${
                     this.duration
                 }m) (begin:: ${this.begin.format(
                     'YYYY-MM-DD HH:mm',
@@ -333,7 +345,7 @@ const saveLog = async (log: TimerLog): Promise<void> => {
     }
 
     // log to focused file
-    if (settings.logFocused && log.task?.path) {
+    if (settings.logFocused && log.task?.path && log.task.path.endsWith('md')) {
         let text = await log.text(log.task.path)
         if (text) {
             await appendFile(log.task?.path, `\n${text}`)
