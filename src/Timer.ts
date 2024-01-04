@@ -26,6 +26,11 @@ let DEFAULT_NOTIFICATION_AUDIO = new Audio(DEFAULT_NOTIFICATION)
 
 let running = false
 
+export type Task = {
+    path: string
+    name: string
+}
+
 interface TimerState {
     autostart: boolean
     running: boolean
@@ -38,10 +43,11 @@ interface TimerState {
     breakLen: number
     count: number
     duration: number
+    task?: Task
 }
 
 interface TimerControl {
-    start: () => void
+    start: (task?: Task) => void
     tick: (t: number) => void
     endSession: (state: TimerState) => TimerState
     reset: () => void
@@ -70,6 +76,7 @@ const state: Writable<TimerState> | TimerStore = writable({
     breakLen: 5,
     count: 25 * 60 * 1000,
     duration: 25,
+    task: undefined,
 })
 
 const stateUnsubribe = state.subscribe((s) => (running = s.running))
@@ -96,8 +103,9 @@ const methods: TimerControl = {
     toggleTimer() {
         running ? this.pause() : this.start()
     },
-    start() {
+    start(task?: Task) {
         update((s) => {
+            s.task = task ?? s.task
             let now = new Date().getTime()
             if (!s.inSession) {
                 // new session
@@ -137,6 +145,7 @@ const methods: TimerControl = {
             s.count = s.duration * 60 * 1000
             s.inSession = false
             s.running = false
+            s.task = undefined
             clock.postMessage(false)
             s.startTime = null
             s.elapsed = 0
@@ -185,6 +194,7 @@ const methods: TimerControl = {
                 moment(s.startTime),
                 moment(),
                 s.duration,
+                s.task,
             )
             saveLog(log)
             notify(log)
@@ -224,6 +234,7 @@ export type Log = {
     begin: moment.Moment
     end: moment.Moment
     mode: Mode
+    task?: Task
 }
 
 // session log
@@ -238,6 +249,7 @@ export class TimerLog {
     end: moment.Moment
     mode: Mode
     session: number
+    task?: Task
 
     constructor(
         mode: Mode,
@@ -245,12 +257,14 @@ export class TimerLog {
         begin: moment.Moment,
         end: moment.Moment,
         session: number,
+        task?: Task,
     ) {
         this.duration = duration
         this.begin = begin
         this.end = end
         this.mode = mode
         this.session = session
+        this.task = task
     }
 
     async text(path: string): Promise<string> {
@@ -299,11 +313,16 @@ const saveLog = async (log: TimerLog): Promise<void> => {
     const settings = $plugin!.getSettings()
 
     // filter log
-    if (
-        settings.logFile == 'NONE' ||
-        (settings.logLevel !== 'ALL' && settings.logLevel !== log.mode)
-    ) {
+    if (settings.logLevel !== 'ALL' && settings.logLevel !== log.mode) {
         return
+    }
+
+    // log to focused file
+    if (settings.logFocused && log.task?.path) {
+        let text = await log.text(log.task.path)
+        if (text) {
+            await appendFile(log.task?.path, `\n${text}`)
+        }
     }
 
     // log to DailyNote

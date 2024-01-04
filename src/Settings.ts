@@ -17,6 +17,7 @@ export interface Settings {
     notificationSound: boolean
     customSound: string
     logFile: LogFileType
+    logFocused: boolean
     logPath: string
     logLevel: LogLevel
     logTemplate: string
@@ -33,6 +34,7 @@ export default class PomodoroSettings extends PluginSettingTab {
         notificationSound: true,
         customSound: '',
         logFile: 'NONE',
+        logFocused: false,
         logPath: '',
         logLevel: 'ALL',
         logTemplate: '',
@@ -220,8 +222,8 @@ export default class PomodoroSettings extends PluginSettingTab {
                     logTemplate.addTextArea((text) => {
                         text.inputEl.style.width = '100%'
                         text.inputEl.style.resize = 'vertical'
+						text.setPlaceholder("<% templater script goes here %>")
                         text.setValue(this._settings.logTemplate)
-
                         text.onChange((value) => {
                             this.updateSettings({ logTemplate: value })
                         })
