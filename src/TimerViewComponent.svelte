@@ -10,17 +10,7 @@ $: strokeOffset = ($remained.millis * offset) / $timer.count
 
 const start = () => {
     if (!$timer.running) {
-        let task = undefined
-        if (!$timer.inSession) {
-            let active = $plugin.app.workspace.getActiveFile()
-            task = active
-                ? {
-                      name: active.name,
-                      path: active.path,
-                  }
-                : undefined
-        }
-        timer.start(task)
+        timer.start()
     }
 }
 

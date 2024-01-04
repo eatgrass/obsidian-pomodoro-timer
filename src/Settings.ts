@@ -15,6 +15,7 @@ export interface Settings {
     autostart: boolean
     useStatusBarTimer: boolean
     notificationSound: boolean
+    enableTaskTimer: boolean
     customSound: string
     logFile: LogFileType
     logFocused: boolean
@@ -32,6 +33,7 @@ export default class PomodoroSettings extends PluginSettingTab {
         autostart: false,
         useStatusBarTimer: false,
         notificationSound: true,
+        enableTaskTimer: false,
         customSound: '',
         logFile: 'NONE',
         logFocused: false,
@@ -94,6 +96,15 @@ export default class PomodoroSettings extends PluginSettingTab {
                 toggle.setValue(this._settings.useStatusBarTimer)
                 toggle.onChange((value) => {
                     this.updateSettings({ useStatusBarTimer: value })
+                })
+            })
+
+        new Setting(containerEl)
+            .setName('Enable task timer')
+            .addToggle((toggle) => {
+                toggle.setValue(this._settings.enableTaskTimer)
+                toggle.onChange((value) => {
+                    this.updateSettings({ enableTaskTimer: value })
                 })
             })
 
@@ -222,7 +233,7 @@ export default class PomodoroSettings extends PluginSettingTab {
                     logTemplate.addTextArea((text) => {
                         text.inputEl.style.width = '100%'
                         text.inputEl.style.resize = 'vertical'
-						text.setPlaceholder("<% templater script goes here %>")
+                        text.setPlaceholder('<% templater script goes here %>')
                         text.setValue(this._settings.logTemplate)
                         text.onChange((value) => {
                             this.updateSettings({ logTemplate: value })
