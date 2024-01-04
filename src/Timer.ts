@@ -157,6 +157,7 @@ const methods: TimerControl = {
                     moment(s.startTime),
                     moment(),
                     s.duration,
+					s.task
                 )
                 saveLog(log)
             }
@@ -349,6 +350,7 @@ const saveLog = async (log: TimerLog): Promise<void> => {
         let text = await log.text(log.task.path)
         if (text) {
             await appendFile(log.task?.path, `\n${text}`)
+			return
         }
     }
 
