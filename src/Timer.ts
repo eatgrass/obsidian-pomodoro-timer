@@ -99,6 +99,20 @@ const settingsUnsubsribe = settings.subscribe(($settings) => {
     })
 })
 
+const resolveFocused = (task?: Task) => {
+    let file = $plugin!.app.workspace.getActiveFile()
+    if (task) {
+        return task
+    }
+    if (file) {
+        return {
+            path: file.path,
+            name: file.name,
+        }
+    }
+    return undefined
+}
+
 const methods: TimerControl = {
     toggleTimer() {
         running ? this.pause() : this.start()
@@ -113,6 +127,7 @@ const methods: TimerControl = {
                 s.duration = s.mode === 'WORK' ? s.workLen : s.breakLen
                 s.count = s.duration * 60 * 1000
                 s.startTime = now
+                s.task = resolveFocused(task)
             }
             s.lastTick = now
             s.inSession = true
@@ -323,6 +338,10 @@ const saveLog = async (log: TimerLog): Promise<void> => {
         if (text) {
             await appendFile(log.task?.path, `\n${text}`)
         }
+    }
+
+    if (settings.logFile === 'NONE') {
+        return
     }
 
     // log to DailyNote

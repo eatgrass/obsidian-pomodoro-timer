@@ -19,3 +19,8 @@ If your plugin does not need CSS, delete this file.
     padding-top: 0;
     padding-bottom: 0;
 }
+
+.pomodoro-focus {
+    margin-left: 0.5rem;
+    cursor: pointer;
+}
