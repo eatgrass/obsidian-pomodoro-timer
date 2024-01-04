@@ -1,5 +1,5 @@
 <script lang="ts">
-import { settings } from 'stores'
+import { settings, plugin } from 'stores'
 import { type TimerStore, remained } from 'Timer'
 export let timer: TimerStore
 
@@ -10,7 +10,17 @@ $: strokeOffset = ($remained.millis * offset) / $timer.count
 
 const start = () => {
     if (!$timer.running) {
-        timer.start()
+        let task = undefined
+        if (!$timer.inSession) {
+            let active = $plugin.app.workspace.getActiveFile()
+            task = active
+                ? {
+                      name: active.name,
+                      path: active.path,
+                  }
+                : undefined
+        }
+        timer.start(task)
     }
 }
 
@@ -198,6 +208,20 @@ const updateBreakLen = (e: Event) => {
             </span>
         </div>
     </div>
+    {#if $timer.task}
+        <div class="pomodoro-task">
+            <span class="pomodoro-task-name">{$timer.task.name}</span>
+            <div class="pomodoro-task-path">
+                <input
+                    id="pomodoro-auto-start"
+                    type="checkbox"
+                    bind:checked={$settings.logFocused}
+                />
+                save log: {$timer.task.path}
+            </div>
+        </div>
+    {/if}
+
     <div class="extra">
         {#if extra === 'settings'}
             <div class="input-group">
@@ -373,5 +397,39 @@ const updateBreakLen = (e: Event) => {
     50% {
         opacity: 0;
     }
+}
+
+.pomodoro-task {
+    display: flex;
+    flex-direction: column;
+    /* align-items: center; */
+    margin-top: 1.5rem;
+    border-left: solid 5px var(--background-modifier-border-hover);
+    background-color: var(--background-modifier-active-hover);
+    padding: 1rem;
+}
+
+.pomodoro-task-name {
+    font-size: 1rem;
+    color: var(--text-muted);
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.pomodoro-task-path {
+    display: flex;
+    align-items: center;
+    font-size: 0.7rem;
+    color: var(--text-faint);
+}
+
+.pomodoro-task-path input[type='checkbox'] {
+    width: 0.7rem;
+    height: 0.7rem;
+}
+
+.pomodoro-task-path input[type='checkbox']:checked:after {
+    width: 0.7rem;
+    height: 0.7rem;
 }
 </style>

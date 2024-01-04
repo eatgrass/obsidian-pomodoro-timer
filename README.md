@@ -47,7 +47,7 @@ For those requiring more detailed logging, consider setting up a custom [log tem
 ### Custom Log Template (Optional)
 
 1. Install the [Templater](https://github.com/SilentVoid13/Templater) plugin.
-2. Compose your log template using the `log` object, which stores session information.
+2. Compose your log template script using the `log` object, which stores session information.
 
 ```javascript
 {
@@ -56,7 +56,8 @@ For those requiring more detailed logging, consider setting up a custom [log tem
 	finished: boolean, // if the session is finished?
 	mode: string,      // 'WORK' or 'BREAK'
 	begin: Moment,     // start time
-	end: Moment        // end time
+	end: Moment,       // end time
+	task?: {path: string, name:string},        // focused task
 }
 ```
 
@@ -66,9 +67,9 @@ here is an example
 <%*
 if (log.mode == "WORK") {
   if (!log.finished) {
-    tR = `🟡 Focused ${log.duration} / ${log.session} minutes`;
+    tR = `🟡 Focused ${log.task?.name ?? ''} ${log.duration} / ${log.session} minutes`;
   } else {
-    tR = `🍅 Focused ${log.duration} minutes`;
+    tR = `🍅 Focused ${log.task?.name ?? ''} ${log.duration} minutes`;
   }
 } else {
   tR = `☕️ Took a break from ${log.begin.format("HH:mm")} to ${log.end.format(
