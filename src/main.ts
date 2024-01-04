@@ -4,7 +4,6 @@ import PomodoroSettings, { type Settings } from 'Settings'
 import stores from 'stores'
 import StatusBar from 'StatusBarComponent.svelte'
 import { store as timer, clean, playSound } from 'Timer'
-import { enhancer } from 'TaskEnhancer'
 
 export default class PomodoroTimerPlugin extends Plugin {
     private settingTab?: PomodoroSettings
@@ -18,7 +17,6 @@ export default class PomodoroTimerPlugin extends Plugin {
         this.settingTab = new PomodoroSettings(this, settings)
         this.addSettingTab(this.settingTab)
         this.registerView(VIEW_TYPE_TIMER, (leaf) => new TimerView(leaf))
-        this.registerMarkdownPostProcessor(enhancer(this))
 
         // ribbon
         this.addRibbonIcon('timer', 'Toggle timer panel', () => {
@@ -76,14 +74,6 @@ export default class PomodoroTimerPlugin extends Plugin {
                     new Notice(`Timer mode: ${t.mode}`)
                 })
             },
-        })
-    }
-
-    public focusTask(path: string, name: string) {
-        timer.reset()
-        timer.start({
-            path,
-            name,
         })
     }
 
