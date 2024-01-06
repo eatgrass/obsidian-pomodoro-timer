@@ -22,7 +22,7 @@ export async function parseWithTemplater(
 
     const preamble = `<%* const log = ${JSON.stringify(
         log,
-    )}; log.begin = moment(log.begin); log.end = moment(log.end); log.finished = log.duration == log.session %>`
+    )}; log.begin = moment(log.begin); log.end = moment(log.end) %>`
 
     return await (
         templater.templater as {

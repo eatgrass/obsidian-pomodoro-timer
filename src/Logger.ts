@@ -25,7 +25,7 @@ export default class Logger {
         if (logFile) {
             const logText = await this.toText(state, logFile)
             if (logText) {
-                await this.plugin.app.vault.append(logFile, logText)
+                await this.plugin.app.vault.append(logFile, `\n${logText}`)
             }
         }
     }

@@ -135,11 +135,12 @@ export default class Timer implements Readable<TimerStore> {
 
     private timeup() {
         let autostart = false
-        this.update((s) => {
+        this.update((state) => {
+            const s = { ...state }
             this.logger.log(s)
             this.notify(s)
-            autostart = s.autostart
-            return this.endSession(s)
+            autostart = state.autostart
+            return this.endSession(state)
         })
         if (autostart) {
             this.start()
@@ -237,7 +238,7 @@ export default class Timer implements Readable<TimerStore> {
     public reset() {
         this.update((state) => {
             if (state.elapsed > 0) {
-                this.logger.log(state)
+                this.logger.log({ ...state })
             }
 
             state.duration =
