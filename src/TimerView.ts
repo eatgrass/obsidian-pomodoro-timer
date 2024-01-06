@@ -1,14 +1,16 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian'
 import TimerComponent from './TimerViewComponent.svelte'
-import { store } from 'Timer'
+import PomodoroTimerPlugin from 'main'
 
 export const VIEW_TYPE_TIMER = 'timer-view'
 
 export class TimerView extends ItemView {
     private component?: TimerComponent
+    private plugin
 
-    constructor(leaf: WorkspaceLeaf) {
+    constructor(plugin: PomodoroTimerPlugin, leaf: WorkspaceLeaf) {
         super(leaf)
+        this.plugin = plugin
         this.icon = 'timer'
     }
 
@@ -24,7 +26,7 @@ export class TimerView extends ItemView {
         this.component = new TimerComponent({
             target: this.contentEl,
             props: {
-                timer: store,
+                timer: this.plugin.timer,
             },
         })
     }
