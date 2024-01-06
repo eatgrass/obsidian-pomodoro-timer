@@ -1,37 +1,25 @@
-import { derived, writable, type Readable, type Writable } from 'svelte/store'
-import { settings, plugin } from 'stores'
-import DEFAULT_NOTIFICATION from 'Notification'
+import PomodoroTimerPlugin from 'main'
 // @ts-ignore
 import Worker from 'clock.worker'
-import {
-    getDailyNote,
-    createDailyNote,
-    getAllDailyNotes,
-} from 'obsidian-daily-notes-interface'
-import { Notice, TFile, moment } from 'obsidian'
-import type PomodoroTimerPlugin from 'main'
-import { parseWithTemplater, getTemplater } from 'utils'
+import { writable, derived } from 'svelte/store'
+import type { Readable } from 'svelte/store'
+import { Notice, TFile } from 'obsidian'
+import Logger from 'Logger'
+import DEFAULT_NOTIFICATION from 'Notification'
 
-// background worker
-const clock: any = Worker()
-clock.onmessage = ({ data }: any) => {
-    store.tick(data as number)
-}
-
-let $plugin: PomodoroTimerPlugin
-
-const pluginUnsubribe = plugin.subscribe((p) => ($plugin = p))
-
-let DEFAULT_NOTIFICATION_AUDIO = new Audio(DEFAULT_NOTIFICATION)
-
-let running = false
+export type Mode = 'WORK' | 'BREAK'
 
 export type Task = {
     path: string
     name: string
 }
 
-interface TimerState {
+export type TimerRemained = {
+    millis: number
+    human: string
+}
+
+export type TimerState = {
     autostart: boolean
     running: boolean
     lastTick: number
@@ -47,149 +35,86 @@ interface TimerState {
     pinTask: boolean
 }
 
-interface TimerControl {
-    start: (task?: Task) => void
-    tick: (t: number) => void
-    endSession: (state: TimerState) => TimerState
-    reset: () => void
-    pause: () => void
-    timeup: () => void
-    toggleMode: (callback?: (state: TimerState) => void) => void
-    toggleTimer: () => void
-    togglePin: () => void
-}
+export type TimerStore = TimerState & { remained: TimerRemained }
 
-export type TimerStore = Writable<TimerState> & TimerControl
+export default class Timer implements Readable<TimerStore> {
+    static DEFAULT_NOTIFICATION_AUDIO = new Audio(DEFAULT_NOTIFICATION)
 
-export type TimerRemained = {
-    millis: number
-    human: string
-}
+    private plugin: PomodoroTimerPlugin
 
-const state: Writable<TimerState> | TimerStore = writable({
-    autostart: false,
-    running: false,
-    lastTick: 0,
-    mode: 'WORK',
-    elapsed: 0,
-    startTime: null,
-    inSession: false,
-    workLen: 25,
-    breakLen: 5,
-    count: 25 * 60 * 1000,
-    duration: 25,
-    task: undefined,
-    pinTask: false,
-})
+    private logger: Logger
 
-const stateUnsubribe = state.subscribe((s) => (running = s.running))
+    private state: TimerState
 
-const { update } = state
+    private store: Readable<TimerStore>
 
-const settingsUnsubsribe = settings.subscribe(($settings) => {
-    update((state) => {
-        state.workLen = $settings.workLen
-        state.breakLen = $settings.breakLen
-        state.autostart = $settings.autostart
+    private clock: any
 
-        if (!state.running && !state.inSession) {
-            state.duration =
-                state.mode == 'WORK' ? state.workLen : state.breakLen
-            state.count = state.duration * 60 * 1000
+    private update
+
+    private unsubscribeState
+
+    public subscribe
+
+    constructor(plugin: PomodoroTimerPlugin) {
+        this.plugin = plugin
+        this.logger = new Logger(plugin)
+        let count = this.toMillis(plugin.getSettings().workLen)
+        this.state = {
+            autostart: false,
+            running: false,
+            lastTick: 0,
+            mode: 'WORK',
+            elapsed: 0,
+            startTime: null,
+            inSession: false,
+            workLen: plugin.getSettings().workLen,
+            breakLen: plugin.getSettings().breakLen,
+            count,
+            duration: plugin.getSettings().workLen,
+            task: undefined,
+            pinTask: false,
         }
+        let store = writable(this.state)
 
-        return state
-    })
-})
+        this.update = store.update
 
-const resolveFocused = (task?: Task) => {
-    let file = $plugin!.app.workspace.getActiveFile()
-    if (task) {
-        return task
+        this.store = derived(store, ($state) => ({
+            ...$state,
+            remained: this.remain($state.count, $state.elapsed),
+        }))
+
+        this.subscribe = this.store.subscribe
+        this.unsubscribeState = this.store.subscribe((state) => {
+            this.state = state
+        })
+        //
+        this.clock = Worker()
+        this.clock.onmessage = ({ data }: any) => {
+            this.tick(data as number)
+        }
     }
-    if (file) {
+
+    private remain(count: number, elapsed: number): TimerRemained {
+        let remained = count - elapsed
+        let min = Math.floor(remained / 60000)
+        let sec = Math.floor((remained % 60000) / 1000)
+        let minStr = min < 10 ? `0${min}` : min.toString()
+        let secStr = sec < 10 ? `0${sec}` : sec.toString()
         return {
-            path: file.path,
-            name: file.name,
+            millis: remained,
+            human: `${minStr} : ${secStr}`,
         }
     }
-    return undefined
-}
 
-const methods: TimerControl = {
-    toggleTimer() {
-        running ? this.pause() : this.start()
-    },
-    start(task?: Task) {
-        update((s) => {
-            s.task = task ?? s.task
-            let now = new Date().getTime()
-            if (!s.inSession) {
-                // new session
-                s.elapsed = 0
-                s.duration = s.mode === 'WORK' ? s.workLen : s.breakLen
-                s.count = s.duration * 60 * 1000
-                s.startTime = now
-                if (!s.pinTask) {
-                    s.task = resolveFocused(task)
-                }
-            }
-            s.lastTick = now
-            s.inSession = true
-            s.running = true
-            clock.postMessage(true)
-            return s
-        })
-    },
-    pause() {
-        update((s) => {
-            s.running = false
-            clock.postMessage(false)
-            return s
-        })
-    },
-    reset() {
-        update((s) => {
-            if (s.elapsed > 0) {
-                const log = new TimerLog(
-                    s.mode,
-                    Math.floor(s.elapsed / 60000),
-                    moment(s.startTime),
-                    moment(),
-                    s.duration,
-					s.task
-                )
-                saveLog(log)
-            }
+    private toMillis(minutes: number) {
+        return minutes * 60 * 1000
+    }
 
-            s.duration = s.mode == 'WORK' ? s.workLen : s.breakLen
-            s.count = s.duration * 60 * 1000
-            s.inSession = false
-            s.running = false
-            s.task = undefined
-            clock.postMessage(false)
-            s.startTime = null
-            s.elapsed = 0
-            s.pinTask = false
-            return s
-        })
-    },
-    toggleMode(callback?: (state: TimerState) => void) {
-        update((s) => {
-            if (s.inSession) {
-                return s
-            }
-            let updated = this.endSession(s)
-            if (callback) {
-                callback(updated)
-            }
-            return updated
-        })
-    },
-    tick(t: number) {
+    private tick(t: number) {
         let timeup: boolean = false
         let pause: boolean = false
-        update((s) => {
+        this.update((s) => {
             if (s.running && s.lastTick) {
                 let diff = t - s.lastTick
                 s.lastTick = t
@@ -206,300 +131,189 @@ const methods: TimerControl = {
         if (!pause && timeup) {
             this.timeup()
         }
-    },
-    timeup() {
+    }
+
+    private timeup() {
         let autostart = false
-        update((s) => {
-            const log = new TimerLog(
-                s.mode,
-                Math.floor(s.elapsed / 60000),
-                moment(s.startTime),
-                moment(),
-                s.duration,
-                s.task,
-            )
-            saveLog(log)
-            notify(log)
+        this.update((s) => {
+            this.logger.log(s)
+            this.notify(s)
             autostart = s.autostart
             return this.endSession(s)
         })
         if (autostart) {
             this.start()
         }
-    },
-    endSession(s: TimerState) {
-        // setup new session
-        if (s.breakLen == 0) {
-            s.mode = 'WORK'
-        } else {
-            s.mode = s.mode == 'WORK' ? 'BREAK' : 'WORK'
+    }
+
+    public start(task?: Task) {
+        this.update((s) => {
+            s.task = task ?? s.task
+            let now = new Date().getTime()
+            if (!s.inSession) {
+                // new session
+                s.elapsed = 0
+                s.duration = s.mode === 'WORK' ? s.workLen : s.breakLen
+                s.count = s.duration * 60 * 1000
+                s.startTime = now
+                if (!s.pinTask) {
+                    s.task = this.resolveFocused(task)
+                }
+            }
+            s.lastTick = now
+            s.inSession = true
+            s.running = true
+            this.clock.postMessage(true)
+            return s
+        })
+    }
+
+    private resolveFocused(task?: Task) {
+        if (task) {
+            return task
         }
-        s.duration = s.mode == 'WORK' ? s.workLen : s.breakLen
-        s.count = s.duration * 60 * 1000
-        s.inSession = false
-        s.running = false
-        clock.postMessage(false)
-        s.startTime = null
-        s.elapsed = 0
-        return s
-    },
-    togglePin() {
-        update((s) => {
+        let file = this.plugin!.app.workspace.getActiveFile()
+        if (file) {
+            return {
+                path: file.path,
+                name: file.name,
+            }
+        }
+        return undefined
+    }
+
+    private endSession(state: TimerState) {
+        // setup new session
+        if (state.breakLen == 0) {
+            state.mode = 'WORK'
+        } else {
+            state.mode = state.mode == 'WORK' ? 'BREAK' : 'WORK'
+        }
+        state.duration = state.mode == 'WORK' ? state.workLen : state.breakLen
+        state.count = state.duration * 60 * 1000
+        state.inSession = false
+        state.running = false
+        this.clock.postMessage(false)
+        state.startTime = null
+        state.elapsed = 0
+        return state
+    }
+
+    private notify(state: TimerState) {
+        const emoji = state.mode == 'WORK' ? '🍅' : '🥤'
+        const text = `${emoji} You have been ${
+            state.mode === 'WORK' ? 'working' : 'breaking'
+        } for ${state.duration} minutes.`
+
+        if (this.plugin.getSettings().useSystemNotification) {
+            const Notification = (require('electron') as any).remote
+                .Notification
+            const n = new Notification({
+                title: 'Pomodoro Timer',
+                body: text,
+                silent: true,
+            })
+            n.on('click', () => {
+                n.close()
+            })
+            n.show()
+        } else {
+            new Notice(`${text}`)
+        }
+
+        if (this.plugin.getSettings().notificationSound) {
+            this.playAudio()
+        }
+    }
+
+    public pause() {
+        this.update((state) => {
+            state.running = false
+            this.clock.postMessage(false)
+            return state
+        })
+    }
+
+    public reset() {
+        this.update((state) => {
+            if (state.elapsed > 0) {
+                this.logger.log(state)
+            }
+
+            state.duration =
+                state.mode == 'WORK' ? state.workLen : state.breakLen
+            state.count = state.duration * 60 * 1000
+            state.inSession = false
+            state.running = false
+            state.task = undefined
+            this.clock.postMessage(false)
+            state.startTime = null
+            state.elapsed = 0
+            state.pinTask = false
+            return state
+        })
+    }
+
+    public toggleMode(callback?: (state: TimerState) => void) {
+        this.update((s) => {
+            if (s.inSession) {
+                return s
+            }
+            let updated = this.endSession(s)
+            if (callback) {
+                callback(updated)
+            }
+            return updated
+        })
+    }
+
+    public togglePin() {
+        this.update((s) => {
             s.pinTask = !s.pinTask
             return s
         })
-    },
-}
-
-Object.keys(methods).forEach((key) => {
-    let method = key as keyof TimerControl
-    ;(state as any)[method] = methods[method].bind(state)
-})
-
-export type Log = {
-    duration: number
-    session: number
-    begin: moment.Moment
-    end: moment.Moment
-    mode: Mode
-    task?: Task
-}
-
-// session log
-export class TimerLog {
-    static EMOJI: Record<Mode, string> = {
-        WORK: '🍅',
-        BREAK: '🥤',
     }
 
-    duration: number
-    begin: moment.Moment
-    end: moment.Moment
-    mode: Mode
-    session: number
-    task?: Task
-
-    constructor(
-        mode: Mode,
-        duration: number,
-        begin: moment.Moment,
-        end: moment.Moment,
-        session: number,
-        task?: Task,
-    ) {
-        this.duration = duration
-        this.begin = begin
-        this.end = end
-        this.mode = mode
-        this.session = session
-        this.task = task
+    public toggleTimer() {
+        this.state.running ? this.pause() : this.start()
     }
 
-    async text(path: string): Promise<string> {
-        const settings = $plugin!.getSettings()
-
-        if (settings.logFormat === 'CUSTOM' && getTemplater($plugin.app)) {
-            // use templater
-            return await parseWithTemplater(
-                $plugin.app,
-                path,
-                settings.logTemplate,
-                this,
-            )
-        } else {
-            // default use a simple log
-
-            if (this.duration != this.session) {
-                return ''
-            }
-
-            if (settings.logFormat === 'SIMPLE') {
-                return `**${this.mode}(${
-                    this.duration
-                }m)**: ${this.begin.format('HH:mm')} - ${this.end.format(
-                    'HH:mm',
-                )}`
-            }
-
-            if (settings.logFormat === 'VERBOSE') {
-                let emoji = TimerLog.EMOJI[this.mode]
-                return `- ${emoji} (pomodoro::${this.mode}) (duration:: ${
-                    this.duration
-                }m) (begin:: ${this.begin.format(
-                    'YYYY-MM-DD HH:mm',
-                )}) - (end:: ${this.end.format('YYYY-MM-DD HH:mm')})`
-            }
-
-            return ''
-        }
-    }
-}
-
-/* Util Functions */
-
-const saveLog = async (log: TimerLog): Promise<void> => {
-    const settings = $plugin!.getSettings()
-
-    // filter log
-    if (settings.logLevel !== 'ALL' && settings.logLevel !== log.mode) {
-        return
-    }
-
-    // log to focused file
-    if (settings.logFocused && log.task?.path && log.task.path.endsWith('md')) {
-        let text = await log.text(log.task.path)
-        if (text) {
-            await appendFile(log.task?.path, `\n${text}`)
-			return
-        }
-    }
-
-    if (settings.logFile === 'NONE') {
-        return
-    }
-
-    // log to DailyNote
-    if (settings.logFile === 'DAILY') {
-        let path = (await getDailyNoteFile()).path
-        let text = await log.text(path)
-        if (text) {
-            await appendFile(path, `\n${text}`)
-        }
-    }
-
-    // log to file
-    if (settings.logFile === 'FILE') {
-        let path = settings.logPath || settings.logPath.trim()
-        if (path) {
-            if (!path.endsWith('.md')) {
-                path += '.md'
-            }
-            await ensureFolderExists(path)
-            let text = await log.text(path)
-            if (text) {
-                if (!(await $plugin!.app.vault.adapter.exists(path))) {
-                    await $plugin!.app.vault.create(path, text)
-                } else {
-                    await appendFile(path, `\n${text}`)
-                }
+    public playAudio() {
+        let audio = Timer.DEFAULT_NOTIFICATION_AUDIO
+        let customSound = this.plugin.getSettings().customSound
+        if (customSound) {
+            const soundFile =
+                this.plugin.app.vault.getAbstractFileByPath(customSound)
+            if (soundFile && soundFile instanceof TFile) {
+                const soundSrc =
+                    this.plugin.app.vault.getResourcePath(soundFile)
+                audio = new Audio(soundSrc)
             }
         }
+        audio.play()
     }
-}
 
-const ensureFolderExists = async (path: string): Promise<void> => {
-    const dirs = path.replace(/\\/g, '/').split('/')
-    dirs.pop() // remove basename
+    public setupTimer() {
+        this.update((state) => {
+            const { workLen, breakLen, autostart } = this.plugin.getSettings()
+            state.workLen = workLen
+            state.breakLen = breakLen
+            state.autostart = autostart
+            if (!state.running && !state.inSession) {
+                state.duration =
+                    state.mode == 'WORK' ? state.workLen : state.breakLen
+                state.count = state.duration * 60 * 1000
+            }
 
-    if (dirs.length) {
-        const dir = join(...dirs)
-        if (!$plugin.app.vault.getAbstractFileByPath(dir)) {
-            await $plugin.app.vault.createFolder(dir)
-        }
-    }
-}
-
-const join = (...partSegments: string[]): string => {
-    // Split the inputs into a list of path commands.
-    let parts: string[] = []
-    for (let i = 0, l = partSegments.length; i < l; i++) {
-        parts = parts.concat(partSegments[i].split('/'))
-    }
-    // Interpret the path commands to get the new resolved path.
-    const newParts = []
-    for (let i = 0, l = parts.length; i < l; i++) {
-        const part = parts[i]
-        // Remove leading and trailing slashes
-        // Also remove "." segments
-        if (!part || part === '.') continue
-        // Push new path segments.
-        else newParts.push(part)
-    }
-    // Preserve the initial slash if there was one.
-    if (parts[0] === '') newParts.unshift('')
-    // Turn back into a single string path.
-    return newParts.join('/')
-}
-
-const getDailyNoteFile = async (): Promise<TFile> => {
-    const file = getDailyNote(moment() as any, getAllDailyNotes())
-    if (!file) {
-        return await createDailyNote(moment() as any)
-    }
-    return file
-}
-
-const appendFile = async (filePath: string, logText: string): Promise<void> => {
-    const tfile = $plugin!.app.vault.getAbstractFileByPath(filePath)
-    if (tfile && tfile instanceof TFile) {
-        await $plugin!.app.vault.append(tfile, logText)
-    } else {
-        new Notice(`log file not found: ${filePath}`)
-    }
-}
-
-const notify = (log: TimerLog) => {
-    const text = `${TimerLog.EMOJI[log.mode]} You have been ${
-        log.mode === 'WORK' ? 'working' : 'breaking'
-    } for ${log.duration} minutes.`
-
-    if ($plugin.getSettings().useSystemNotification) {
-        const Notification = (require('electron') as any).remote.Notification
-        const n = new Notification({
-            title: 'Pomodoro Timer',
-            body: text,
-            silent: true,
+            return state
         })
-        n.on('click', () => {
-            n.close()
-        })
-        n.show()
-    } else {
-        new Notice(`${text}`)
     }
 
-    if ($plugin.getSettings().notificationSound) {
-        playSound()
-    }
-}
-
-export const playSound = () => {
-    let audio = DEFAULT_NOTIFICATION_AUDIO
-    let customSound = $plugin.getSettings().customSound
-    if (customSound) {
-        const soundFile = $plugin?.app.vault.getAbstractFileByPath(customSound)
-        if (soundFile && soundFile instanceof TFile) {
-            const soundSrc = $plugin?.app.vault.getResourcePath(soundFile)
-            audio = new Audio(soundSrc)
+    public destroy() {
+        this.pause()
+        this.clock?.terminate()
+        if (this.unsubscribeState) {
+            this.unsubscribeState()
         }
     }
-    audio.play()
-}
-
-export const remained: Readable<TimerRemained> = derived(
-    state as Writable<TimerState>,
-    ($state) => {
-        let remained = $state.count - $state.elapsed
-        let min = Math.floor(remained / 60000)
-        let sec = Math.floor((remained % 60000) / 1000)
-        let minStr = min < 10 ? `0${min}` : min.toString()
-        let secStr = sec < 10 ? `0${sec}` : sec.toString()
-
-        return {
-            millis: remained,
-            human: `${minStr} : ${secStr}`,
-        } as TimerRemained
-    },
-)
-
-export const store = state as TimerStore
-
-export type Mode = 'WORK' | 'BREAK'
-
-export const clean = () => {
-    store.pause()
-    settingsUnsubsribe()
-    pluginUnsubribe()
-    stateUnsubribe()
-    clock.terminate()
 }

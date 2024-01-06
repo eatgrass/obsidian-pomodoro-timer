@@ -60,6 +60,7 @@ export default class PomodoroSettings extends PluginSettingTab {
         this.unsubscribe = PomodoroSettings.settings.subscribe((settings) => {
             this.plugin.saveData(settings)
             this._settings = settings
+            this.plugin.timer?.setupTimer()
         })
     }
 
@@ -131,7 +132,7 @@ export default class PomodoroSettings extends PluginSettingTab {
                     button.setIcon('play')
                     button.setTooltip('play')
                     button.onClick(() => {
-                        this.plugin.playSound()
+                        this.plugin.timer?.playAudio()
                     })
                 })
         }

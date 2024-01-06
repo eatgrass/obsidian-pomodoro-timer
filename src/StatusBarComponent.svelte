@@ -1,8 +1,10 @@
 <script lang="ts">
-import { store, remained, type Mode } from 'Timer'
 import { settings } from 'stores'
 import { setTooltip, Menu } from 'obsidian'
+import { type Mode } from 'Timer'
+import type Timer from 'Timer'
 
+export let store: Timer
 let statusbar: HTMLElement
 let mode: Mode | undefined
 
@@ -125,7 +127,7 @@ setTooltip
                 >
             {/if}
         </span>
-        {$remained.human}
+        {$store.remained.human}
     </span>
 {/if}
 

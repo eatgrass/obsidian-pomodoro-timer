@@ -3,20 +3,22 @@ import { Notice, Plugin, WorkspaceLeaf } from 'obsidian'
 import PomodoroSettings, { type Settings } from 'Settings'
 import stores from 'stores'
 import StatusBar from 'StatusBarComponent.svelte'
-import { store as timer, clean, playSound } from 'Timer'
+import Timer from 'Timer'
 
 export default class PomodoroTimerPlugin extends Plugin {
     private settingTab?: PomodoroSettings
+
+    public timer?: Timer
 
     async onload() {
         // init svelte stores
         stores.plugin.set(this)
 
         const settings = await this.loadData()
-
         this.settingTab = new PomodoroSettings(this, settings)
         this.addSettingTab(this.settingTab)
-        this.registerView(VIEW_TYPE_TIMER, (leaf) => new TimerView(leaf))
+        this.timer = new Timer(this)
+        this.registerView(VIEW_TYPE_TIMER, (leaf) => new TimerView(this, leaf))
 
         // ribbon
         this.addRibbonIcon('timer', 'Toggle timer panel', () => {
@@ -32,14 +34,14 @@ export default class PomodoroTimerPlugin extends Plugin {
         // status bar
         const status = this.addStatusBarItem()
         status.className = `${status.className} mod-clickable`
-        new StatusBar({ target: status })
+        new StatusBar({ target: status, props: { store: this.timer } })
 
         // commands
         this.addCommand({
             id: 'toggle-timer',
             name: 'Toggle timer',
             callback: () => {
-                timer.toggleTimer()
+                this.timer?.toggleTimer()
             },
         })
 
@@ -61,7 +63,7 @@ export default class PomodoroTimerPlugin extends Plugin {
             id: 'reset-timer',
             name: 'Reset timer',
             callback: () => {
-                timer.reset()
+                this.timer?.reset()
                 new Notice('Timer reset')
             },
         })
@@ -70,7 +72,7 @@ export default class PomodoroTimerPlugin extends Plugin {
             id: 'toggle-mode',
             name: 'Toggle timer mode',
             callback: () => {
-                timer.toggleMode((t) => {
+                this.timer?.toggleMode((t) => {
                     new Notice(`Timer mode: ${t.mode}`)
                 })
             },
@@ -83,13 +85,9 @@ export default class PomodoroTimerPlugin extends Plugin {
         )
     }
 
-    public async playSound() {
-        playSound()
-    }
-
     onunload() {
         this.settingTab?.unload()
-        clean()
+        this.timer?.destroy()
     }
     async activateView() {
         let { workspace } = this.app

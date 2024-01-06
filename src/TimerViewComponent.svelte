@@ -1,12 +1,12 @@
 <script lang="ts">
-import { settings, plugin } from 'stores'
-import { type TimerStore, remained } from 'Timer'
-export let timer: TimerStore
+import { settings } from 'stores'
+import type Timer from 'Timer'
+export let timer: Timer
 
 let extra: 'settings' | 'logs' | 'close' = 'close'
 const offset = 440
 
-$: strokeOffset = ($remained.millis * offset) / $timer.count
+$: strokeOffset = ($timer.remained.millis * offset) / $timer.count
 
 const start = () => {
     if (!$timer.running) {
@@ -67,6 +67,7 @@ const updateBreakLen = (e: Event) => {
         return s
     })
 }
+
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -89,7 +90,7 @@ const updateBreakLen = (e: Event) => {
                 </div>
                 <div on:click={toggleTimer} class="control">
                     <h2 class="timer-text">
-                        {$remained.human}
+                        {$timer.remained.human}
                     </h2>
                 </div>
             </div>
