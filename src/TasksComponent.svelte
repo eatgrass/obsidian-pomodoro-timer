@@ -7,7 +7,11 @@ export let timer: Timer
 let status = ''
 let query = ''
 
-$: active = $timer.task
+$: active = $tasks.file?.path
+
+$: if (active) {
+    timer.removeTask()
+}
 
 $: filtered = $tasks
     ? $tasks.list.filter((item) => {
@@ -26,7 +30,6 @@ $: filtered = $tasks
     : []
 
 const selectTask = (item: TaskItem) => {
-    console.log(item)
     timer.setTask(item)
 }
 
@@ -100,7 +103,7 @@ const removeTask = () => {
             </div>
             {#if $tasks.list.length > 0}
                 <div class="pomodoro-tasks-active">
-                    {#if active}
+                    {#if $timer.task}
                         <div class="pomodoro-tasks-item">
                             <div class="pomodoro-tasks-name">
                                 <input
