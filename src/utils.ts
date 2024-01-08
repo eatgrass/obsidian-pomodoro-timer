@@ -119,7 +119,7 @@ const tagParser = seqMap(
     (start, rest) => start + rest.join(''),
 ).desc("tag ('#hello/stuff')")
 
-export const extractTags = (source: string): Set<string> => {
+export const extractTags = (source: string): string[] => {
     let result = new Set<string>()
 
     let matches = source.matchAll(POTENTIAL_TAG_MATCHER)
@@ -128,5 +128,5 @@ export const extractTags = (source: string): Set<string> => {
         if (parsed.status) result.add(parsed.value)
     }
 
-    return result
+    return [...result]
 }

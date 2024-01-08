@@ -25,12 +25,22 @@ $: filtered = $tasks
       })
     : []
 
-const select = (item: TaskItem) => {
+const selectTask = (item: TaskItem) => {
+    console.log(item)
     timer.setTask(item)
 }
 
 const togglePin = () => {
     tasks.togglePin()
+}
+
+const changeTaskName = (e: Event) => {
+    let target = e.target as HTMLInputElement
+    timer.updateTaskName(target.value)
+}
+
+const removeTask = () => {
+    timer.removeTask()
 }
 </script>
 
@@ -38,7 +48,7 @@ const togglePin = () => {
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 
 {#if $tasks.file}
-    <div class="pomodoro-task-wrapper">
+    <div class="pomodoro-tasks-wrapper">
         <div class="pomodoro-tasks-header">
             <div class="pomodoro-tasks-header-title">
                 <span class="pomodoro-tasks-pin" on:click={togglePin}>
@@ -82,22 +92,26 @@ const togglePin = () => {
                     {/if}
                 </span>
                 <span class="pomodoro-tasks-file-name">
-					{$tasks.file.name}
-				</span>
+                    {$tasks.file.name}
+                </span>
                 <span class="pomodoro-tasks-count">
                     {filtered.length} tasks
                 </span>
             </div>
             {#if $tasks.list.length > 0}
-                <div class="pomodoro-tasks-list">
+                <div class="pomodoro-tasks-active">
                     {#if active}
-                        <div
-                            class="pomodoro-tasks-item {active.checked
-                                ? 'pomodoro-tasks-checked'
-                                : ''}"
-                        >
+                        <div class="pomodoro-tasks-item">
                             <div class="pomodoro-tasks-name">
-                                {#if active.checked}
+                                <input
+                                    type="text"
+                                    value={$timer.task?.name}
+                                    on:input={changeTaskName}
+                                />
+                                <span
+                                    class="pomodoro-tasks-remove"
+                                    on:click={removeTask}
+                                >
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
                                         width="12"
@@ -108,25 +122,12 @@ const togglePin = () => {
                                         stroke-width="2"
                                         stroke-linecap="round"
                                         stroke-linejoin="round"
-                                        class="lucide lucide-check"
-                                        ><path d="M20 6 9 17l-5-5" /></svg
+                                        class="lucide lucide-x"
+                                        ><path d="M18 6 6 18" /><path
+                                            d="m6 6 12 12"
+                                        /></svg
                                     >
-                                {:else}
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="12"
-                                        height="12"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        class="lucide lucide-circle"
-                                        ><circle cx="12" cy="12" r="10" /></svg
-                                    >
-                                {/if}
-                                <div>{active.name}</div>
+                                </span>
                             </div>
                         </div>
                     {/if}
@@ -167,7 +168,7 @@ const togglePin = () => {
                 {#each filtered as item}
                     <div
                         on:click={() => {
-                            select(item)
+                            selectTask(item)
                         }}
                         class="pomodoro-tasks-item {item.checked
                             ? 'pomodoro-tasks-checked'
@@ -213,7 +214,7 @@ const togglePin = () => {
 {/if}
 
 <style>
-.pomodoro-task-wrapper {
+.pomodoro-tasks-wrapper {
     width: 100%;
     border: 1px solid var(--background-modifier-border);
     border-radius: 5px;
@@ -239,9 +240,23 @@ const togglePin = () => {
     width: 50px;
 }
 
-.pomodoro-tasks-list {
+.pomodoro-tasks-list,
+.pomodoro-tasks-active {
     border-top: 1px solid var(--background-modifier-border);
     width: 100%;
+}
+
+.pomodoro-tasks-item {
+    width: 100%;
+    padding: 0.5rem 1rem;
+    font-size: 0.8rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+}
+
+.pomodoro-tasks-list .pomodoro-tasks-item {
+    cursor: pointer;
 }
 
 .pomodoro-tasks-toolbar {
@@ -262,22 +277,25 @@ const togglePin = () => {
     padding: 0.5rem 0rem;
 }
 
-.pomodoro-tasks-text-filter input {
+.pomodoro-tasks-wrapper input {
     width: 100%;
     font-size: 0.8rem;
-    height: 0.8rem;
     border: none;
     border-radius: 0;
 }
 
-.pomodoro-tasks-text-filter input:active {
+.pomodoro-tasks-wrapper input:active {
     border: none;
     box-shadow: none;
 }
 
-.pomodoro-tasks-text-filter input:focus {
+.pomodoro-tasks-wrapper input:focus {
     border: none;
     box-shadow: none;
+}
+
+.pomodoro-tasks-text-filter input {
+    height: 0.8rem;
 }
 
 .pomodoro-tasks-filter {
@@ -286,16 +304,6 @@ const togglePin = () => {
     border-radius: 10px;
     cursor: pointer;
     color: var(--text-muted);
-}
-
-.pomodoro-tasks-item {
-    width: 100%;
-    padding: 0.5rem 1rem;
-    font-size: 0.8rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: flex;
-    cursor: pointer;
 }
 
 .pomodoro-tasks-name svg {
@@ -337,12 +345,13 @@ const togglePin = () => {
     color: var(--text-muted);
 }
 
-.pomodoro-tasks-header .pomodoro-tasks-list {
-    border: none;
-}
 .pomodoro-tasks-pin {
     cursor: pointer;
     padding-right: 3px;
+}
+
+.pomodoro-tasks-remove {
+    cursor: pointer;
 }
 /* .pomodoro-tasks-header .pomodoro-tasks-item { */
 /* background-color: var(--background-modifier-hover); */

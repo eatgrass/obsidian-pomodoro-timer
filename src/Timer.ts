@@ -309,6 +309,22 @@ export default class Timer implements Readable<TimerStore> {
         })
     }
 
+    public updateTaskName(name: string) {
+        this.update((state) => {
+            if (state.task) {
+                state.task.name = name
+            }
+            return state
+        })
+    }
+
+    public removeTask() {
+        this.update((state) => {
+            state.task = undefined
+            return state
+        })
+    }
+
     public destroy() {
         this.pause()
         this.clock?.terminate()

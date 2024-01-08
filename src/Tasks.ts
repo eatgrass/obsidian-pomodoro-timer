@@ -14,7 +14,7 @@ export type TaskItem = {
     file: string
     symbol: string
     name: string
-    tags: Set<string>
+    tags: string[]
     line: number
     lineCount: number
     list: number
@@ -28,7 +28,7 @@ export type TaskItem = {
 export type TaskStore = {
     file?: TFile
     pinned: boolean
-	list: TaskItem[]
+    list: TaskItem[]
 }
 
 export default class Tasks implements Readable<TaskStore> {
@@ -43,7 +43,7 @@ export default class Tasks implements Readable<TaskStore> {
     private state: TaskStore = {
         file: undefined,
         pinned: false,
-		list: []
+        list: [],
     }
 
     constructor(plugin: PomodoroTimerPlugin) {
