@@ -1,9 +1,8 @@
 import type PomodoroTimerPlugin from 'main'
-import { PluginSettingTab, Setting } from 'obsidian'
+import { PluginSettingTab, Setting, moment } from 'obsidian'
 import type { Unsubscriber } from 'svelte/motion'
 import { writable, type Writable } from 'svelte/store'
 import { getTemplater } from 'utils'
-import { moment } from 'obsidian'
 
 type LogFileType = 'DAILY' | 'FILE' | 'NONE'
 type LogLevel = 'ALL' | 'WORK' | 'BREAK'

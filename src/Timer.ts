@@ -61,17 +61,17 @@ export default class Timer implements Readable<TimerStore> {
         this.logger = new Logger(plugin)
         let count = this.toMillis(plugin.getSettings().workLen)
         this.state = {
-            autostart: false,
+            autostart: plugin.getSettings().autostart,
+            workLen: plugin.getSettings().workLen,
+            breakLen: plugin.getSettings().breakLen,
             running: false,
             lastTick: 0,
             mode: 'WORK',
             elapsed: 0,
             startTime: null,
             inSession: false,
-            workLen: plugin.getSettings().workLen,
-            breakLen: plugin.getSettings().breakLen,
-            count,
             duration: plugin.getSettings().workLen,
+            count,
             task: undefined,
             pinTask: false,
         }

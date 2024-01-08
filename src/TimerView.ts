@@ -27,6 +27,7 @@ export class TimerView extends ItemView {
             target: this.contentEl,
             props: {
                 timer: this.plugin.timer,
+				tasks: this.plugin.tasks
             },
         })
     }

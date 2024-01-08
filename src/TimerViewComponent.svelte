@@ -1,7 +1,11 @@
 <script lang="ts">
 import { settings } from 'stores'
+import TasksComponent from 'TasksComponent.svelte'
 import type Timer from 'Timer'
+import type Tasks from 'Tasks'
+
 export let timer: Timer
+export let tasks: Tasks
 
 let extra: 'settings' | 'logs' | 'close' = 'close'
 const offset = 440
@@ -67,7 +71,6 @@ const updateBreakLen = (e: Event) => {
         return s
     })
 }
-
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -203,63 +206,9 @@ const updateBreakLen = (e: Event) => {
             </span>
         </div>
     </div>
-    {#if $timer.task}
-        <div class="pomodoro-task">
-            <div class="pomodoro-task-header">
-                <span class="pomodoro-task-name">
-                    {$timer.task.name}
-                </span>
-                <span class="pomodoro-task-pin" on:click={togglePin}>
-                    {#if !$timer.pinTask}
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            class="lucide lucide-pin"
-                            ><line x1="12" x2="12" y1="17" y2="22" /><path
-                                d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"
-                            /></svg
-                        >
-                    {:else}
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            class="lucide lucide-pin-off"
-                            ><line x1="2" x2="22" y1="2" y2="22" /><line
-                                x1="12"
-                                x2="12"
-                                y1="17"
-                                y2="22"
-                            /><path
-                                d="M9 9v1.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h12"
-                            /><path d="M15 9.34V6h1a2 2 0 0 0 0-4H7.89" /></svg
-                        >
-                    {/if}
-                </span>
-            </div>
-            <div class="pomodoro-task-path">
-                <input
-                    id="pomodoro-auto-start"
-                    type="checkbox"
-                    bind:checked={$settings.logFocused}
-                />
-                save log: {$timer.task.path}
-            </div>
-        </div>
-    {/if}
+    <div class="pomodoro-tasks">
+        <TasksComponent {tasks} />
+    </div>
 
     <div class="extra">
         {#if extra === 'settings'}
@@ -438,47 +387,9 @@ const updateBreakLen = (e: Event) => {
     }
 }
 
-.pomodoro-task {
-    display: flex;
-    flex-direction: column;
-    /* align-items: center; */
-    margin-top: 1.5rem;
-    border-left: solid 5px var(--background-modifier-border-hover);
-    background-color: var(--background-modifier-active-hover);
-    padding: 1rem;
-}
-
-.pomodoro-task-header {
+.pomodoro-tasks {
     width: 100%;
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 5px;
+    margin-top: 1.5rem;
 }
 
-.pomodoro-task-name {
-    font-size: 1rem;
-    color: var(--text-muted);
-    font-weight: bold;
-}
-
-.pomodoro-task-pin {
-    cursor: pointer;
-}
-
-.pomodoro-task-path {
-    display: flex;
-    align-items: center;
-    font-size: 0.7rem;
-    color: var(--text-faint);
-}
-
-.pomodoro-task-path input[type='checkbox'] {
-    width: 0.7rem;
-    height: 0.7rem;
-}
-
-.pomodoro-task-path input[type='checkbox']:checked:after {
-    width: 0.7rem;
-    height: 0.7rem;
-}
 </style>

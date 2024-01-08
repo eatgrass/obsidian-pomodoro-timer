@@ -1,10 +1,13 @@
-import type { Log } from 'Timer'
-import { type App, TFile, moment, Notice } from 'obsidian'
+import { type App, TFile, moment } from 'obsidian'
+import { type TimerLog } from 'Logger'
 import {
     getDailyNote,
     createDailyNote,
     getAllDailyNotes,
 } from 'obsidian-daily-notes-interface'
+import { seqMap, string as str, alt, regexp } from 'parsimmon'
+
+const POTENTIAL_TAG_MATCHER = /#[^\s,;\.:!\?'"`()\[\]\{\}]+/giu
 
 export function getTemplater(app: App) {
     return app.plugins.plugins['templater-obsidian']
@@ -14,7 +17,7 @@ export async function parseWithTemplater(
     app: App,
     tfile: TFile,
     templateContent: string,
-    log: Log,
+    log: TimerLog,
 ) {
     const templater = getTemplater(app)
 
@@ -104,4 +107,26 @@ export const appendFile = async (
     logText: string,
 ): Promise<void> => {
     await app.vault.append(file, logText)
+}
+
+const tagParser = seqMap(
+    str('#'),
+    alt(
+        regexp(
+            /[^\u2000-\u206F\u2E00-\u2E7F'!"#$%&()*+,.:;<=>?@^`{|}~\[\]\\\s]/,
+        ).desc('text'),
+    ).many(),
+    (start, rest) => start + rest.join(''),
+).desc("tag ('#hello/stuff')")
+
+export const extractTags = (source: string): Set<string> => {
+    let result = new Set<string>()
+
+    let matches = source.matchAll(POTENTIAL_TAG_MATCHER)
+    for (let match of matches) {
+        let parsed = tagParser.parse(match[0])
+        if (parsed.status) result.add(parsed.value)
+    }
+
+    return result
 }
