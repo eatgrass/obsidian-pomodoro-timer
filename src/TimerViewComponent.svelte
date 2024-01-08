@@ -36,10 +36,6 @@ const toggleMode = () => {
     timer.toggleMode()
 }
 
-const togglePin = () => {
-    timer.togglePin()
-}
-
 const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
     if (extra === value) {
         extra = 'close'
@@ -207,7 +203,7 @@ const updateBreakLen = (e: Event) => {
         </div>
     </div>
     <div class="pomodoro-tasks">
-        <TasksComponent {tasks} />
+        <TasksComponent {tasks} {timer} />
     </div>
 
     <div class="extra">
@@ -247,6 +243,14 @@ const updateBreakLen = (e: Event) => {
                         id="pomodoro-auto-start"
                         type="checkbox"
                         bind:checked={$settings.notificationSound}
+                    />
+                </div>
+                <div class="input">
+                    <label for="pomodoro-break-len">Log to task file</label>
+                    <input
+                        id="pomodoro-auto-start"
+                        type="checkbox"
+                        bind:checked={$settings.logFocused}
                     />
                 </div>
             </div>
@@ -391,5 +395,4 @@ const updateBreakLen = (e: Event) => {
     width: 100%;
     margin-top: 1.5rem;
 }
-
 </style>

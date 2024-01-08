@@ -1,7 +1,8 @@
-import { type TimerState, type Mode, type Task } from 'Timer'
+import { type TimerState, type Mode } from 'Timer'
 import * as utils from 'utils'
 import PomodoroTimerPlugin from 'main'
 import { TFile, Notice, moment } from 'obsidian'
+import type { TaskItem } from 'Tasks'
 
 export type TimerLog = {
     duration: number
@@ -9,7 +10,7 @@ export type TimerLog = {
     end: moment.Moment
     mode: Mode
     session: number
-    task?: Task
+    task?: TaskItem
     finished: boolean
 }
 
@@ -41,13 +42,13 @@ export default class Logger {
         // focused file has highest priority
         if (
             settings.logFocused &&
-            state.task?.path &&
-            state.task.path.endsWith('md')
+            state.task?.file &&
+            state.task.file.endsWith('md')
         ) {
             // return this.app.get state.task.path
             // this.plugin.app.vault
             const file = this.plugin.app.vault.getAbstractFileByPath(
-                state.task.path,
+                state.task.file,
             )
             if (file && file instanceof TFile) {
                 return file
@@ -67,10 +68,14 @@ export default class Logger {
         // log to file
         if (settings.logFile === 'FILE') {
             if (settings.logPath) {
+                let path = settings.logPath
+                if (!path.endsWith('md')) {
+                    path += '.md'
+                }
                 try {
                     return await utils.ensureFileExists(
                         this.plugin.app,
-                        settings.logPath,
+                        path,
                     )
                 } catch (error) {
                     if (error instanceof Error) {

@@ -11,8 +11,9 @@ import { writable, type Readable, type Writable } from 'svelte/store'
 const LIST_ITEM_REGEX = /^[\s>]*(\d+\.|\d+\)|\*|-|\+)\s*(\[.{0,1}\])?\s*(.*)$/mu
 
 export type TaskItem = {
+    file: string
     symbol: string
-    text: string
+    name: string
     tags: Set<string>
     line: number
     lineCount: number
@@ -26,9 +27,8 @@ export type TaskItem = {
 
 export type TaskStore = {
     file?: TFile
-    list: TaskItem[]
-    pined: boolean
-    active?: TaskItem
+    pinned: boolean
+	list: TaskItem[]
 }
 
 export default class Tasks implements Readable<TaskStore> {
@@ -42,8 +42,8 @@ export default class Tasks implements Readable<TaskStore> {
 
     private state: TaskStore = {
         file: undefined,
-        list: [],
-        pined: false,
+        pinned: false,
+		list: []
     }
 
     constructor(plugin: PomodoroTimerPlugin) {
@@ -51,7 +51,6 @@ export default class Tasks implements Readable<TaskStore> {
 
         this._store = writable(this.state)
         this.unsubscribe = this._store.subscribe((state) => {
-            console.log(state)
             this.state = state
         })
 
@@ -59,9 +58,11 @@ export default class Tasks implements Readable<TaskStore> {
 
         this.plugin.registerEvent(
             plugin.app.workspace.on('active-leaf-change', () => {
-                const file = this.getCurrentFile() || this.state.file
-                if (this.state.file != file) {
-                    this.getFileTasks(file)
+                if (!this.state.pinned) {
+                    const file = this.getCurrentFile() || this.state.file
+                    if (this.state.file != file) {
+                        this.getFileTasks(file)
+                    }
                 }
             }),
         )
@@ -70,7 +71,7 @@ export default class Tasks implements Readable<TaskStore> {
                 'changed',
                 (file: TFile, content: string, cache: CachedMetadata) => {
                     if (file.extension === 'md' && file == this.state.file) {
-                        let tasks = resolveTasks(content, cache)
+                        let tasks = resolveTasks(file, content, cache)
                         this._store.update((state) => {
                             state.list = tasks
                             return state
@@ -81,24 +82,18 @@ export default class Tasks implements Readable<TaskStore> {
         )
     }
 
-    public setActive(task: TaskItem) {
-        this._store.update((state) => {
-            state.active = task
-            return state
-        })
-    }
-
     private getFileTasks(file?: TFile) {
         if (file) {
             this.plugin.app.vault.cachedRead(file).then((c) => {
                 let tasks = resolveTasks(
+                    file,
                     c,
                     this.plugin.app.metadataCache.getFileCache(file),
                 )
                 this._store.update((state) => ({
                     file,
                     list: tasks,
-                    pined: state.pined,
+                    pinned: state.pinned,
                     active: undefined,
                 }))
             })
@@ -106,7 +101,7 @@ export default class Tasks implements Readable<TaskStore> {
             this._store.update((state) => ({
                 file,
                 list: [],
-                pined: state.pined,
+                pinned: state.pinned,
                 active: undefined,
             }))
         }
@@ -124,7 +119,7 @@ export default class Tasks implements Readable<TaskStore> {
 
     public togglePin() {
         this._store.update((state) => {
-            state.pined = !state.pined
+            state.pinned = !state.pinned
             return state
         })
     }
@@ -135,6 +130,7 @@ export default class Tasks implements Readable<TaskStore> {
 }
 
 function resolveTasks(
+    file: TFile,
     content: string,
     metadata: CachedMetadata | null,
 ): TaskItem[] {
@@ -162,7 +158,7 @@ function resolveTasks(
                     ),
                 )
                 .map((t) => t.trim())
-            let textWithNewline = textParts.join('\n')
+            // let textWithNewline = textParts.join('\n')
             let textNoNewline = textParts.join(' ')
 
             // Find the list that we are a part of by line.
@@ -175,8 +171,9 @@ function resolveTasks(
 
             // Construct universal information about this element (before tasks).
             let item: TaskItem = {
+                file: file.path,
                 symbol: rawMatch[1],
-                text: textWithNewline,
+                name: textNoNewline,
                 tags: extractTags(textNoNewline),
                 line: rawElement.position.start.line,
                 lineCount:

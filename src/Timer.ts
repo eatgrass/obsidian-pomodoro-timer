@@ -6,13 +6,9 @@ import type { Readable } from 'svelte/store'
 import { Notice, TFile } from 'obsidian'
 import Logger from 'Logger'
 import DEFAULT_NOTIFICATION from 'Notification'
+import type { TaskItem } from 'Tasks'
 
 export type Mode = 'WORK' | 'BREAK'
-
-export type Task = {
-    path: string
-    name: string
-}
 
 export type TimerRemained = {
     millis: number
@@ -31,7 +27,7 @@ export type TimerState = {
     breakLen: number
     count: number
     duration: number
-    task?: Task
+    task?: TaskItem
     pinTask: boolean
 }
 
@@ -147,9 +143,8 @@ export default class Timer implements Readable<TimerStore> {
         }
     }
 
-    public start(task?: Task) {
+    public start() {
         this.update((s) => {
-            s.task = task ?? s.task
             let now = new Date().getTime()
             if (!s.inSession) {
                 // new session
@@ -157,9 +152,6 @@ export default class Timer implements Readable<TimerStore> {
                 s.duration = s.mode === 'WORK' ? s.workLen : s.breakLen
                 s.count = s.duration * 60 * 1000
                 s.startTime = now
-                if (!s.pinTask) {
-                    s.task = this.resolveFocused(task)
-                }
             }
             s.lastTick = now
             s.inSession = true
@@ -169,19 +161,26 @@ export default class Timer implements Readable<TimerStore> {
         })
     }
 
-    private resolveFocused(task?: Task) {
-        if (task) {
-            return task
-        }
-        let file = this.plugin!.app.workspace.getActiveFile()
-        if (file) {
-            return {
-                path: file.path,
-                name: file.name,
-            }
-        }
-        return undefined
+    public setTask(task: TaskItem) {
+        this.update((state) => {
+            state.task = task
+            return state
+        })
     }
+
+    // private resolveFocused(task?: Task) {
+    //     if (task) {
+    //         return task
+    //     }
+    //     let file = this.plugin!.app.workspace.getActiveFile()
+    //     if (file) {
+    //         return {
+    //             path: file.path,
+    //             name: file.name,
+    //         }
+    //     }
+    //     return undefined
+    // }
 
     private endSession(state: TimerState) {
         // setup new session

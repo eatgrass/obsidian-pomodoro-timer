@@ -1,18 +1,20 @@
 <script lang="ts">
 import Tasks, { type TaskItem } from 'Tasks'
+import type Timer from 'Timer'
 export let tasks: Tasks
+export let timer: Timer
 
 let status = ''
 let query = ''
 
-$: active = $tasks.active
+$: active = $timer.task
 
 $: filtered = $tasks
     ? $tasks.list.filter((item) => {
           let statusMatch = true
           let textMatch = true
           if (query) {
-              textMatch = item.text.includes(query)
+              textMatch = item.name.toLowerCase().includes(query.toLowerCase())
           }
           if (status) {
               if (status === 'todo') statusMatch = !item.checked
@@ -24,17 +26,64 @@ $: filtered = $tasks
     : []
 
 const select = (item: TaskItem) => {
-    tasks.setActive(item)
+    timer.setTask(item)
+}
+
+const togglePin = () => {
+    tasks.togglePin()
 }
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
-<div class="pomodoro-task-wrapper">
-    {#if $tasks.file}
+
+{#if $tasks.file}
+    <div class="pomodoro-task-wrapper">
         <div class="pomodoro-tasks-header">
             <div class="pomodoro-tasks-header-title">
-                <span>{$tasks.file.name}</span>
+                <span class="pomodoro-tasks-pin" on:click={togglePin}>
+                    {#if !$tasks.pinned}
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="lucide lucide-pin"
+                            ><line x1="12" x2="12" y1="17" y2="22" /><path
+                                d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"
+                            /></svg
+                        >
+                    {:else}
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="12"
+                            height="12"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="lucide lucide-pin-off"
+                            ><line x1="2" x2="22" y1="2" y2="22" /><line
+                                x1="12"
+                                x2="12"
+                                y1="17"
+                                y2="22"
+                            /><path
+                                d="M9 9v1.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h12"
+                            /><path d="M15 9.34V6h1a2 2 0 0 0 0-4H7.89" /></svg
+                        >
+                    {/if}
+                </span>
+                <span class="pomodoro-tasks-file-name">
+					{$tasks.file.name}
+				</span>
                 <span class="pomodoro-tasks-count">
                     {filtered.length} tasks
                 </span>
@@ -77,7 +126,7 @@ const select = (item: TaskItem) => {
                                         ><circle cx="12" cy="12" r="10" /></svg
                                     >
                                 {/if}
-                                <div>{active.text}</div>
+                                <div>{active.name}</div>
                             </div>
                         </div>
                     {/if}
@@ -113,67 +162,81 @@ const select = (item: TaskItem) => {
                 </div>
             {/if}
         </div>
-        <div class="pomodoro-tasks-list">
-            {#each filtered as item}
-                <div
-                    on:click={() => {
-                        select(item)
-                    }}
-                    class="pomodoro-tasks-item {item.checked
-                        ? 'pomodoro-tasks-checked'
-                        : ''}"
-                >
-                    <div class="pomodoro-tasks-name">
-                        {#if item.checked}
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="12"
-                                height="12"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                class="lucide lucide-check"
-                                ><path d="M20 6 9 17l-5-5" /></svg
-                            >
-                        {:else}
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                width="12"
-                                height="12"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                stroke-width="2"
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                class="lucide lucide-circle"
-                                ><circle cx="12" cy="12" r="10" /></svg
-                            >
-                        {/if}
-                        <div>{item.text}</div>
+        {#if filtered.length > 0}
+            <div class="pomodoro-tasks-list">
+                {#each filtered as item}
+                    <div
+                        on:click={() => {
+                            select(item)
+                        }}
+                        class="pomodoro-tasks-item {item.checked
+                            ? 'pomodoro-tasks-checked'
+                            : ''}"
+                    >
+                        <div class="pomodoro-tasks-name">
+                            {#if item.checked}
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="12"
+                                    height="12"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    class="lucide lucide-check"
+                                    ><path d="M20 6 9 17l-5-5" /></svg
+                                >
+                            {:else}
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="12"
+                                    height="12"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    class="lucide lucide-circle"
+                                    ><circle cx="12" cy="12" r="10" /></svg
+                                >
+                            {/if}
+                            <div>{item.name}</div>
+                        </div>
                     </div>
-                </div>
-            {/each}
-        </div>
-    {/if}
-</div>
+                {/each}
+            </div>
+        {/if}
+    </div>
+{/if}
 
 <style>
 .pomodoro-task-wrapper {
     width: 100%;
     border: 1px solid var(--background-modifier-border);
+    border-radius: 5px;
 }
 
 .pomodoro-tasks-header-title {
+    width: 100%;
+    background-color: var(--background-modifier-active-hover);
     padding: 0.5rem 1rem;
     font-size: 1rem;
     font-weight: bold;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
+}
+
+.pomodoro-tasks-header-title .pomodoro-tasks-file-name {
+    flex: 1;
+    text-wrap: nowrap;
+}
+
+.pomodoro-tasks-header-title .pomodoro-tasks-count {
+    width: 50px;
 }
 
 .pomodoro-tasks-list {
@@ -273,7 +336,15 @@ const select = (item: TaskItem) => {
     text-decoration: line-through;
     color: var(--text-muted);
 }
-.pomodoro-tasks-header .pomodoro-tasks-item {
-    background-color: rgba(var(--color-green-rgb), 0.2);
+
+.pomodoro-tasks-header .pomodoro-tasks-list {
+    border: none;
 }
+.pomodoro-tasks-pin {
+    cursor: pointer;
+    padding-right: 3px;
+}
+/* .pomodoro-tasks-header .pomodoro-tasks-item { */
+/* background-color: var(--background-modifier-hover); */
+/* } */
 </style>
