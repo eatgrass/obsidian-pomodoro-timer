@@ -63,8 +63,8 @@ For those requiring more detailed logging, consider setting up a custom [log tem
 
 // TaskItem
 {
-    path: string,         // log file path
-    fileName: string,     // log file name
+    path: string,         // task file path
+    fileName: string,     // task file name
     text: string,         // the full text of the task
     name: string,         // editable task name (default: task description)
     status: string,       // task checkbox symbol 
