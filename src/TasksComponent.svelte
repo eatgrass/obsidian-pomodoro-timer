@@ -1,17 +1,11 @@
 <script lang="ts">
 import Tasks, { type TaskItem } from 'Tasks'
 import type Timer from 'Timer'
+import { pinned } from 'stores'
 export let tasks: Tasks
 export let timer: Timer
-
 let status = ''
 let query = ''
-
-$: active = $tasks.file?.path
-
-$: if (active) {
-    timer.removeTask()
-}
 
 $: filtered = $tasks
     ? $tasks.list.filter((item) => {
@@ -34,7 +28,9 @@ const selectTask = (item: TaskItem) => {
 }
 
 const togglePin = () => {
-    tasks.togglePin()
+    pinned.update((p) => {
+        return !p
+    })
 }
 
 const changeTaskName = (e: Event) => {
@@ -43,7 +39,7 @@ const changeTaskName = (e: Event) => {
 }
 
 const removeTask = () => {
-    timer.removeTask()
+    timer.setTask(undefined)
 }
 </script>
 
@@ -55,7 +51,7 @@ const removeTask = () => {
         <div class="pomodoro-tasks-header">
             <div class="pomodoro-tasks-header-title">
                 <span class="pomodoro-tasks-pin" on:click={togglePin}>
-                    {#if !$tasks.pinned}
+                    {#if !$pinned}
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="12"
@@ -237,6 +233,9 @@ const removeTask = () => {
 .pomodoro-tasks-header-title .pomodoro-tasks-file-name {
     flex: 1;
     text-wrap: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding-right: 5px;
 }
 
 .pomodoro-tasks-header-title .pomodoro-tasks-count {
@@ -356,7 +355,4 @@ const removeTask = () => {
 .pomodoro-tasks-remove {
     cursor: pointer;
 }
-/* .pomodoro-tasks-header .pomodoro-tasks-item { */
-/* background-color: var(--background-modifier-hover); */
-/* } */
 </style>

@@ -4,6 +4,7 @@ import PomodoroSettings, { type Settings } from 'Settings'
 import StatusBar from 'StatusBarComponent.svelte'
 import Timer from 'Timer'
 import Tasks from 'Tasks'
+import { derived } from 'svelte/store'
 
 export default class PomodoroTimerPlugin extends Plugin {
     private settingTab?: PomodoroSettings
@@ -18,6 +19,12 @@ export default class PomodoroTimerPlugin extends Plugin {
         this.addSettingTab(this.settingTab)
         this.timer = new Timer(this)
         this.tasks = new Tasks(this)
+
+        // listen on active file changes
+        derived(this.tasks, ($state) => $state.file).subscribe((active) => {
+			this.timer?.setTask(undefined)
+        })
+
         this.registerView(VIEW_TYPE_TIMER, (leaf) => new TimerView(this, leaf))
 
         // ribbon

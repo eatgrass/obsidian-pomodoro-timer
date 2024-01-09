@@ -16,6 +16,7 @@ export type TimerLog = {
 
 const DEFAULT_LOG_TASK: TaskItem = {
     path: '',
+    fileName: '',
     text: '',
     name: '',
     status: '',
@@ -40,12 +41,13 @@ export default class Logger {
         this.plugin = plugin
     }
 
-    public async log(state: TimerState) {
+    public async log(state: TimerState): Promise<TFile | undefined> {
         const logFile = await this.resolveLogFile(state)
         if (logFile) {
             const logText = await this.toText(state, logFile)
             if (logText) {
                 await this.plugin.app.vault.append(logFile, `\n${logText}`)
+                return logFile
             }
         }
     }

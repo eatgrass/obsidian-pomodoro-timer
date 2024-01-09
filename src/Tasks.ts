@@ -1,7 +1,8 @@
-import type PomodoroTimerPlugin from 'main'
-import { MarkdownView, type CachedMetadata, type TFile } from 'obsidian'
+import PomodoroTimerPlugin from 'main'
+import { type CachedMetadata, type TFile } from 'obsidian'
 import { extractTaskComponents } from 'utils'
-import { writable, type Readable, type Writable } from 'svelte/store'
+import { writable, derived, type Readable, type Writable } from 'svelte/store'
+import { pinned } from 'stores'
 
 const LIST_ITEM_REGEX = /^[\s>]*(\d+\.|\d+\)|\*|-|\+)\s*(\[.{0,1}\])?\s*(.*)$/mu
 import {
@@ -11,7 +12,7 @@ import {
     DEFAULT_SYMBOLS,
 } from 'serializer'
 import type { TaskFormat } from 'Settings'
-import type { TaskDetails } from 'serializer'
+import type { Unsubscriber } from 'svelte/motion'
 
 const serializers: Record<TaskFormat, TaskDeserializer> = {
     TASKS: new DefaultTaskSerializer(DEFAULT_SYMBOLS),
@@ -21,6 +22,7 @@ const serializers: Record<TaskFormat, TaskDeserializer> = {
 export type TaskItem = {
     path: string
     text: string
+    fileName: string
     name: string
     status: string
     blockLink: string
@@ -39,45 +41,54 @@ export type TaskItem = {
 
 export type TaskStore = {
     file?: TFile
-    pinned: boolean
     list: TaskItem[]
 }
 
-export default class Tasks implements Readable<TaskStore> {
+export default class Tasks implements Readable<TaskStore & { active: string }> {
     private plugin: PomodoroTimerPlugin
 
     private _store: Writable<TaskStore>
 
     public subscribe
 
-    private unsubscribe
+    private unsubscribers: Unsubscriber[] = []
 
     private state: TaskStore = {
         file: undefined,
-        pinned: false,
         list: [],
     }
+
+    private pinned: boolean = false
 
     constructor(plugin: PomodoroTimerPlugin) {
         this.plugin = plugin
 
         this._store = writable(this.state)
-        this.unsubscribe = this._store.subscribe((state) => {
-            this.state = state
-        })
 
-        this.subscribe = this._store.subscribe
+        this.unsubscribers.push(
+            this._store.subscribe((state) => {
+                this.state = state
+            }),
+        )
+
+        this.subscribe = derived(this._store, ($state) => ({
+            ...$state,
+            active: $state.file?.path || '',
+        })).subscribe
 
         this.plugin.registerEvent(
             plugin.app.workspace.on('active-leaf-change', () => {
-                if (!this.state.pinned) {
-                    const file = this.getCurrentFile() || this.state.file
-                    if (this.state.file != file) {
-                        this.getFileTasks(file)
-                    }
+                if (!this.pinned) {
+                    this.loadActiveFileTasks()
                 }
             }),
         )
+        this.unsubscribers.push(
+            pinned.subscribe((p) => {
+                this.pinned = p
+            }),
+        )
+
         this.plugin.registerEvent(
             plugin.app.metadataCache.on(
                 'changed',
@@ -99,10 +110,21 @@ export default class Tasks implements Readable<TaskStore> {
                 },
             ),
         )
+
+        this.plugin.app.workspace.onLayoutReady(() => {
+            this.loadActiveFileTasks()
+        })
+    }
+
+    private loadActiveFileTasks() {
+        const file = this.getCurrentFile() || this.state.file
+        if (file && this.state.file != file) {
+            this.getFileTasks(file)
+        }
     }
 
     private getFileTasks(file?: TFile) {
-        if (file) {
+        if (file && file.extension == 'md') {
             this.plugin.app.vault.cachedRead(file).then((c) => {
                 let serializer =
                     serializers[this.plugin.getSettings().taskFormat]
@@ -112,42 +134,29 @@ export default class Tasks implements Readable<TaskStore> {
                     c,
                     this.plugin.app.metadataCache.getFileCache(file),
                 )
-                this._store.update((state) => ({
+                this._store.update(() => ({
                     file,
                     list: tasks,
-                    pinned: state.pinned,
                     active: undefined,
                 }))
             })
         } else {
-            this._store.update((state) => ({
+            this._store.update(() => ({
                 file,
                 list: [],
-                pinned: state.pinned,
                 active: undefined,
             }))
         }
     }
 
-    private getCurrentFile(): TFile | undefined {
-        const view = this.plugin.app.workspace.getActiveViewOfType(MarkdownView)
-        if (view) {
-            let file = view.file
-            if (file?.extension == 'md') {
-                return file
-            }
-        }
-    }
-
-    public togglePin() {
-        this._store.update((state) => {
-            state.pinned = !state.pinned
-            return state
-        })
+    private getCurrentFile(): TFile | null {
+        return this.plugin.app.workspace.getActiveFile()
     }
 
     public destroy() {
-        this.unsubscribe()
+        for (let unsub of this.unsubscribers) {
+            unsub()
+        }
     }
 }
 
@@ -179,6 +188,7 @@ function resolveTasks(
             let item: TaskItem = {
                 text: line,
                 path: file.path,
+                fileName: file.name,
                 name: detail.description,
                 status: components.status,
                 blockLink: components.blockLink,
