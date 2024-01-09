@@ -1,8 +1,7 @@
 <script lang="ts">
 import { settings } from 'stores'
 import { setTooltip, Menu } from 'obsidian'
-import { type Mode } from 'Timer'
-import type Timer from 'Timer'
+import Timer, { type Mode } from 'Timer'
 
 export let store: Timer
 let statusbar: HTMLElement

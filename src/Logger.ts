@@ -1,7 +1,8 @@
-import { type TimerState, type Mode, type Task } from 'Timer'
+import { type TimerState, type Mode } from 'Timer'
 import * as utils from 'utils'
 import PomodoroTimerPlugin from 'main'
 import { TFile, Notice, moment } from 'obsidian'
+import type { TaskItem } from 'Tasks'
 
 export type TimerLog = {
     duration: number
@@ -9,8 +10,28 @@ export type TimerLog = {
     end: moment.Moment
     mode: Mode
     session: number
-    task?: Task
+    task: TaskItem
     finished: boolean
+}
+
+const DEFAULT_LOG_TASK: TaskItem = {
+    path: '',
+    fileName: '',
+    text: '',
+    name: '',
+    status: '',
+    blockLink: '',
+    checked: false,
+    done: '',
+    due: '',
+    created: '',
+    cancelled: '',
+    scheduled: '',
+    start: '',
+    description: '',
+    priority: '',
+    recurrence: '',
+    tags: [],
 }
 
 export default class Logger {
@@ -20,12 +41,13 @@ export default class Logger {
         this.plugin = plugin
     }
 
-    public async log(state: TimerState) {
+    public async log(state: TimerState): Promise<TFile | undefined> {
         const logFile = await this.resolveLogFile(state)
         if (logFile) {
             const logText = await this.toText(state, logFile)
             if (logText) {
                 await this.plugin.app.vault.append(logFile, `\n${logText}`)
+                return logFile
             }
         }
     }
@@ -38,7 +60,7 @@ export default class Logger {
             return
         }
 
-        // focused file has highest priority
+        // focused file has the highest priority
         if (
             settings.logFocused &&
             state.task?.path &&
@@ -67,11 +89,12 @@ export default class Logger {
         // log to file
         if (settings.logFile === 'FILE') {
             if (settings.logPath) {
+                let path = settings.logPath
+                if (!path.endsWith('md')) {
+                    path += '.md'
+                }
                 try {
-                    return await utils.ensureFileExists(
-                        this.plugin.app,
-                        settings.logPath,
-                    )
+                    return await utils.ensureFileExists(this.plugin.app, path)
                 } catch (error) {
                     if (error instanceof Error) {
                         new Notice(error.message)
@@ -89,7 +112,9 @@ export default class Logger {
             begin: moment(state.startTime),
             end: moment(),
             session: state.duration,
-            task: state.task,
+            task: state.task
+                ? { ...DEFAULT_LOG_TASK, ...state.task }
+                : DEFAULT_LOG_TASK,
             finished: state.count == state.elapsed,
         }
     }

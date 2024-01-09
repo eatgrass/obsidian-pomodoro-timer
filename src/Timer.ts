@@ -6,13 +6,11 @@ import type { Readable } from 'svelte/store'
 import { Notice, TFile } from 'obsidian'
 import Logger from 'Logger'
 import DEFAULT_NOTIFICATION from 'Notification'
+import type { TaskItem } from 'Tasks'
+import { pinned } from 'stores'
+import type { Unsubscriber } from 'svelte/motion'
 
 export type Mode = 'WORK' | 'BREAK'
-
-export type Task = {
-    path: string
-    name: string
-}
 
 export type TimerRemained = {
     millis: number
@@ -31,8 +29,7 @@ export type TimerState = {
     breakLen: number
     count: number
     duration: number
-    task?: Task
-    pinTask: boolean
+    task?: Partial<TaskItem>
 }
 
 export type TimerStore = TimerState & { remained: TimerRemained }
@@ -52,29 +49,31 @@ export default class Timer implements Readable<TimerStore> {
 
     private update
 
-    private unsubscribeState
+    private unsubscribers: Unsubscriber[] = []
 
     public subscribe
+
+    private pinned: boolean = false
 
     constructor(plugin: PomodoroTimerPlugin) {
         this.plugin = plugin
         this.logger = new Logger(plugin)
         let count = this.toMillis(plugin.getSettings().workLen)
         this.state = {
-            autostart: false,
+            autostart: plugin.getSettings().autostart,
+            workLen: plugin.getSettings().workLen,
+            breakLen: plugin.getSettings().breakLen,
             running: false,
             lastTick: 0,
             mode: 'WORK',
             elapsed: 0,
             startTime: null,
             inSession: false,
-            workLen: plugin.getSettings().workLen,
-            breakLen: plugin.getSettings().breakLen,
-            count,
             duration: plugin.getSettings().workLen,
+            count,
             task: undefined,
-            pinTask: false,
         }
+
         let store = writable(this.state)
 
         this.update = store.update
@@ -85,9 +84,16 @@ export default class Timer implements Readable<TimerStore> {
         }))
 
         this.subscribe = this.store.subscribe
-        this.unsubscribeState = this.store.subscribe((state) => {
-            this.state = state
-        })
+        this.unsubscribers.push(
+            this.store.subscribe((state) => {
+                this.state = state
+            }),
+        )
+        this.unsubscribers.push(
+            pinned.subscribe((p) => {
+                this.pinned = p
+            }),
+        )
         //
         this.clock = Worker()
         this.clock.onmessage = ({ data }: any) => {
@@ -137,8 +143,9 @@ export default class Timer implements Readable<TimerStore> {
         let autostart = false
         this.update((state) => {
             const s = { ...state }
-            this.logger.log(s)
-            this.notify(s)
+            this.logger.log(s).then((logFile) => {
+                this.notify(s, logFile)
+            })
             autostart = state.autostart
             return this.endSession(state)
         })
@@ -147,9 +154,8 @@ export default class Timer implements Readable<TimerStore> {
         }
     }
 
-    public start(task?: Task) {
+    public start() {
         this.update((s) => {
-            s.task = task ?? s.task
             let now = new Date().getTime()
             if (!s.inSession) {
                 // new session
@@ -157,9 +163,6 @@ export default class Timer implements Readable<TimerStore> {
                 s.duration = s.mode === 'WORK' ? s.workLen : s.breakLen
                 s.count = s.duration * 60 * 1000
                 s.startTime = now
-                if (!s.pinTask) {
-                    s.task = this.resolveFocused(task)
-                }
             }
             s.lastTick = now
             s.inSession = true
@@ -169,19 +172,26 @@ export default class Timer implements Readable<TimerStore> {
         })
     }
 
-    private resolveFocused(task?: Task) {
-        if (task) {
-            return task
-        }
-        let file = this.plugin!.app.workspace.getActiveFile()
-        if (file) {
-            return {
-                path: file.path,
-                name: file.name,
-            }
-        }
-        return undefined
+    public setTask(task?: Partial<TaskItem>) {
+        this.update((state) => {
+            state.task = task
+            return state
+        })
     }
+
+    // private resolveFocused(task?: Task) {
+    //     if (task) {
+    //         return task
+    //     }
+    //     let file = this.plugin!.app.workspace.getActiveFile()
+    //     if (file) {
+    //         return {
+    //             path: file.path,
+    //             name: file.name,
+    //         }
+    //     }
+    //     return undefined
+    // }
 
     private endSession(state: TimerState) {
         // setup new session
@@ -200,7 +210,7 @@ export default class Timer implements Readable<TimerStore> {
         return state
     }
 
-    private notify(state: TimerState) {
+    private notify(state: TimerState, logFile?: TFile) {
         const emoji = state.mode == 'WORK' ? '🍅' : '🥤'
         const text = `${emoji} You have been ${
             state.mode === 'WORK' ? 'working' : 'breaking'
@@ -209,17 +219,28 @@ export default class Timer implements Readable<TimerStore> {
         if (this.plugin.getSettings().useSystemNotification) {
             const Notification = (require('electron') as any).remote
                 .Notification
-            const n = new Notification({
+            const sysNotification = new Notification({
                 title: 'Pomodoro Timer',
                 body: text,
                 silent: true,
             })
-            n.on('click', () => {
-                n.close()
+            sysNotification.on('click', () => {
+                if (logFile) {
+                    this.plugin.app.workspace.getLeaf('split').openFile(logFile)
+                }
+                sysNotification.close()
             })
-            n.show()
+            sysNotification.show()
         } else {
-            new Notice(`${text}`)
+            let fragment = new DocumentFragment()
+            let span = fragment.createEl('span')
+            span.setText(`${text}`)
+            fragment.addEventListener('click', () => {
+                if (logFile) {
+                    this.plugin.app.workspace.getLeaf('split').openFile(logFile)
+                }
+            })
+            new Notice(fragment)
         }
 
         if (this.plugin.getSettings().notificationSound) {
@@ -246,11 +267,12 @@ export default class Timer implements Readable<TimerStore> {
             state.count = state.duration * 60 * 1000
             state.inSession = false
             state.running = false
-            state.task = undefined
+            if (!this.pinned) {
+                state.task = undefined
+            }
             this.clock.postMessage(false)
             state.startTime = null
             state.elapsed = 0
-            state.pinTask = false
             return state
         })
     }
@@ -265,13 +287,6 @@ export default class Timer implements Readable<TimerStore> {
                 callback(updated)
             }
             return updated
-        })
-    }
-
-    public togglePin() {
-        this.update((s) => {
-            s.pinTask = !s.pinTask
-            return s
         })
     }
 
@@ -310,11 +325,20 @@ export default class Timer implements Readable<TimerStore> {
         })
     }
 
+    public updateTaskName(name: string) {
+        this.update((state) => {
+            if (state.task) {
+                state.task.name = name
+            }
+            return state
+        })
+    }
+
     public destroy() {
         this.pause()
         this.clock?.terminate()
-        if (this.unsubscribeState) {
-            this.unsubscribeState()
+        for (let unsub of this.unsubscribers) {
+            unsub()
         }
     }
 }

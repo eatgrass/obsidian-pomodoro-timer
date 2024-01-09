@@ -50,6 +50,7 @@ For those requiring more detailed logging, consider setting up a custom [log tem
 2. Compose your log template script using the `log` object, which stores session information.
 
 ```javascript
+// TimerLog
 {
 	duration: number,  // duratin in minutes
 	session: number,   // session length
@@ -57,7 +58,28 @@ For those requiring more detailed logging, consider setting up a custom [log tem
 	mode: string,      // 'WORK' or 'BREAK'
 	begin: Moment,     // start time
 	end: Moment,       // end time
-	task?: {path: string, name:string},        // focused task
+	task: TaskItem,    // focused task
+}
+
+// TaskItem
+{
+    path: string,         // log file path
+    fileName: string,     // log file name
+    text: string,         // the full text of the task
+    name: string,         // editable task name (default: task description)
+    status: string,       // task checkbox symbol 
+    blockLink: string,    // block link id of the task
+    checked: boolean,   
+    done: string,         // done date
+    due: string,          // due date
+    created: string,      // created date
+    cancelled: string,    // cancelled date
+    scheduled: string,    // scheduled date
+    start: string,        // start date
+    description: string,  // task description
+    priority: string,     // task priority
+    recurrence: string,   // task recurrence rule
+    tags: string[],       // task tags
 }
 ```
 
@@ -67,9 +89,9 @@ here is an example
 <%*
 if (log.mode == "WORK") {
   if (!log.finished) {
-    tR = `🟡 Focused ${log.task?.name ?? ''} ${log.duration} / ${log.session} minutes`;
+    tR = `🟡 Focused ${log.task.name} ${log.duration} / ${log.session} minutes`;
   } else {
-    tR = `🍅 Focused ${log.task?.name ?? ''} ${log.duration} minutes`;
+    tR = `🍅 Focused ${log.task.name} ${log.duration} minutes`;
   }
 } else {
   tR = `☕️ Took a break from ${log.begin.format("HH:mm")} to ${log.end.format(

@@ -1,13 +1,14 @@
 import type PomodoroTimerPlugin from 'main'
-import { PluginSettingTab, Setting } from 'obsidian'
+import { DropdownComponent } from 'obsidian'
+import { PluginSettingTab, Setting, moment } from 'obsidian'
 import type { Unsubscriber } from 'svelte/motion'
 import { writable, type Writable } from 'svelte/store'
 import { getTemplater } from 'utils'
-import { moment } from 'obsidian'
 
 type LogFileType = 'DAILY' | 'FILE' | 'NONE'
 type LogLevel = 'ALL' | 'WORK' | 'BREAK'
 type LogFormat = 'SIMPLE' | 'VERBOSE' | 'CUSTOM'
+export type TaskFormat = 'TASKS' | 'DATAVIEW'
 
 export interface Settings {
     workLen: number
@@ -23,6 +24,7 @@ export interface Settings {
     logTemplate: string
     logFormat: LogFormat
     useSystemNotification: boolean
+    taskFormat: TaskFormat
 }
 
 export default class PomodoroSettings extends PluginSettingTab {
@@ -40,6 +42,7 @@ export default class PomodoroSettings extends PluginSettingTab {
         logTemplate: '',
         logFormat: 'VERBOSE',
         useSystemNotification: false,
+        taskFormat: 'TASKS',
     }
 
     static settings: Writable<Settings> = writable(
@@ -137,9 +140,27 @@ export default class PomodoroSettings extends PluginSettingTab {
                 })
         }
 
+        new Setting(containerEl).setHeading().setName('Task')
+        new Setting(containerEl)
+            .setName('Task format')
+            .addDropdown((dropdown) => {
+                dropdown.selectEl.style.width = '160px'
+                dropdown.addOptions({
+                    TASKS: 'Tasks Emoji Format',
+                    DATAVIEW: 'Dataview',
+                })
+                dropdown.setValue(this._settings.taskFormat)
+                dropdown.onChange((value: string) => {
+                    this.updateSettings(
+                        { taskFormat: value as TaskFormat },
+                        true,
+                    )
+                })
+            })
+
         new Setting(containerEl).setHeading().setName('Log')
         new Setting(containerEl).setName('Log file').addDropdown((dropdown) => {
-            dropdown.selectEl.style.width = '120px'
+            dropdown.selectEl.style.width = '160px'
             dropdown.addOptions({
                 NONE: 'None',
                 DAILY: 'Daily note',
@@ -168,7 +189,7 @@ export default class PomodoroSettings extends PluginSettingTab {
             new Setting(containerEl)
                 .setName('Log level')
                 .addDropdown((dropdown) => {
-                    dropdown.selectEl.style.width = '120px'
+                    dropdown.selectEl.style.width = '160px'
                     dropdown.addOptions({
                         ALL: 'All',
                         WORK: 'Work',
@@ -199,7 +220,7 @@ export default class PomodoroSettings extends PluginSettingTab {
                 .setName('Log format')
                 .setDesc(example)
                 .addDropdown((dropdown) => {
-                    dropdown.selectEl.style.width = '120px'
+                    dropdown.selectEl.style.width = '160px'
                     dropdown.addOptions({
                         SIMPLE: 'Simple',
                         VERBOSE: 'Verbose',

@@ -1,9 +1,13 @@
 <script lang="ts">
-import { settings } from 'stores'
+import TasksComponent from 'TasksComponent.svelte'
+import TimerSettingsComponent from 'TimerSettingsComponent.svelte'
 import type Timer from 'Timer'
-export let timer: Timer
+import type Tasks from 'Tasks'
 
-let extra: 'settings' | 'logs' | 'close' = 'close'
+export let timer: Timer
+export let tasks: Tasks
+
+let extra: 'settings' | 'tasks' | 'close' = 'tasks'
 const offset = 440
 
 $: strokeOffset = ($timer.remained.millis * offset) / $timer.count
@@ -32,42 +36,13 @@ const toggleMode = () => {
     timer.toggleMode()
 }
 
-const togglePin = () => {
-    timer.togglePin()
-}
-
-const toggleExtra = (value: 'settings' | 'logs' | 'close') => {
+const toggleExtra = (value: 'settings' | 'tasks') => {
     if (extra === value) {
         extra = 'close'
         return
     }
     extra = value
 }
-
-const updateWorkLen = (e: Event) => {
-    const target = e.target as HTMLInputElement
-    const value = parseInt(target.value)
-    settings.update((s) => {
-        if (value >= 1) {
-            s.workLen = value
-        }
-        target.value = s.workLen.toString()
-        return s
-    })
-}
-
-const updateBreakLen = (e: Event) => {
-    const target = e.target as HTMLInputElement
-    const value = parseInt(target.value)
-    settings.update((s) => {
-        if (value >= 0) {
-            s.breakLen = value
-        }
-        target.value = s.workLen.toString()
-        return s
-    })
-}
-
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -124,7 +99,7 @@ const updateBreakLen = (e: Event) => {
         <div class="btn-group">
             <span
                 on:click={() => {
-                    toggleExtra('settings')
+                    toggleExtra('tasks')
                 }}
                 class="control"
             >
@@ -138,14 +113,15 @@ const updateBreakLen = (e: Event) => {
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-linejoin="round"
-                    class="lucide lucide-settings-2"
-                    ><path d="M20 7h-9" /><path d="M14 17H5" /><circle
-                        cx="17"
-                        cy="17"
-                        r="3"
-                    /><circle cx="7" cy="7" r="3" /></svg
+                    class="lucide lucide-list-todo"
+                    ><rect x="3" y="5" width="6" height="6" rx="1" /><path
+                        d="m3 17 2 2 4-4"
+                    /><path d="M13 6h8" /><path d="M13 12h8" /><path
+                        d="M13 18h8"
+                    /></svg
                 >
             </span>
+
             {#if !$timer.running}
                 <span on:click={start} class="control">
                     <svg
@@ -201,106 +177,38 @@ const updateBreakLen = (e: Event) => {
                     /><path d="M3 3v5h5" /></svg
                 >
             </span>
+            <span
+                on:click={() => {
+                    toggleExtra('settings')
+                }}
+                class="control"
+            >
+                <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    class="lucide lucide-settings-2"
+                    ><path d="M20 7h-9" /><path d="M14 17H5" /><circle
+                        cx="17"
+                        cy="17"
+                        r="3"
+                    /><circle cx="7" cy="7" r="3" /></svg
+                >
+            </span>
         </div>
     </div>
-    {#if $timer.task}
-        <div class="pomodoro-task">
-            <div class="pomodoro-task-header">
-                <span class="pomodoro-task-name">
-                    {$timer.task.name}
-                </span>
-                <span class="pomodoro-task-pin" on:click={togglePin}>
-                    {#if !$timer.pinTask}
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            class="lucide lucide-pin"
-                            ><line x1="12" x2="12" y1="17" y2="22" /><path
-                                d="M5 17h14v-1.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24Z"
-                            /></svg
-                        >
-                    {:else}
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            width="12"
-                            height="12"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            stroke-width="2"
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            class="lucide lucide-pin-off"
-                            ><line x1="2" x2="22" y1="2" y2="22" /><line
-                                x1="12"
-                                x2="12"
-                                y1="17"
-                                y2="22"
-                            /><path
-                                d="M9 9v1.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V17h12"
-                            /><path d="M15 9.34V6h1a2 2 0 0 0 0-4H7.89" /></svg
-                        >
-                    {/if}
-                </span>
-            </div>
-            <div class="pomodoro-task-path">
-                <input
-                    id="pomodoro-auto-start"
-                    type="checkbox"
-                    bind:checked={$settings.logFocused}
-                />
-                save log: {$timer.task.path}
-            </div>
-        </div>
-    {/if}
 
-    <div class="extra">
-        {#if extra === 'settings'}
-            <div class="input-group">
-                <div class="input">
-                    <label for="pomodoro-wrok-len">Work</label>
-                    <input
-                        id="pomodoro-work-len"
-                        value={$settings.workLen}
-                        on:change={updateWorkLen}
-                        min="1"
-                        type="number"
-                    />
-                </div>
-                <div class="input">
-                    <label for="pomodoro-break-len">Break</label>
-                    <input
-                        id="pomodoro-break-len"
-                        value={$settings.breakLen}
-                        on:change={updateBreakLen}
-                        min="0"
-                        type="number"
-                    />
-                </div>
-                <div class="input">
-                    <label for="pomodoro-break-len">Auto start</label>
-                    <input
-                        id="pomodoro-auto-start"
-                        type="checkbox"
-                        bind:checked={$settings.autostart}
-                    />
-                </div>
-                <div class="input">
-                    <label for="pomodoro-break-len">Sound</label>
-                    <input
-                        id="pomodoro-auto-start"
-                        type="checkbox"
-                        bind:checked={$settings.notificationSound}
-                    />
-                </div>
-            </div>
+    <div class="pomodoro-extra">
+        {#if extra == 'tasks'}
+            <TasksComponent {tasks} {timer} />
+        {:else if extra == 'settings'}
+            <TimerSettingsComponent />
         {/if}
     </div>
 </div>
@@ -385,26 +293,10 @@ const updateBreakLen = (e: Event) => {
 .control svg:active {
     opacity: 0.5;
 }
-.input-group {
-    margin-top: 2.5rem;
-    align-self: center;
+
+.pomodoro-extra {
     width: 100%;
-}
-
-.input {
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    width: 100%;
-}
-
-.input label {
-    display: inline-block;
-    width: 80px;
-}
-
-.input input[type='number'] {
-    flex: 1;
+    margin-top: 2rem;
 }
 
 .breath {
@@ -420,14 +312,6 @@ const updateBreakLen = (e: Event) => {
     animation: blink 1s linear infinite;
 }
 
-.extra {
-    width: 100%;
-    margin-top: 1rem;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
 @keyframes blink {
     0%,
     100% {
@@ -436,49 +320,5 @@ const updateBreakLen = (e: Event) => {
     50% {
         opacity: 0;
     }
-}
-
-.pomodoro-task {
-    display: flex;
-    flex-direction: column;
-    /* align-items: center; */
-    margin-top: 1.5rem;
-    border-left: solid 5px var(--background-modifier-border-hover);
-    background-color: var(--background-modifier-active-hover);
-    padding: 1rem;
-}
-
-.pomodoro-task-header {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 5px;
-}
-
-.pomodoro-task-name {
-    font-size: 1rem;
-    color: var(--text-muted);
-    font-weight: bold;
-}
-
-.pomodoro-task-pin {
-    cursor: pointer;
-}
-
-.pomodoro-task-path {
-    display: flex;
-    align-items: center;
-    font-size: 0.7rem;
-    color: var(--text-faint);
-}
-
-.pomodoro-task-path input[type='checkbox'] {
-    width: 0.7rem;
-    height: 0.7rem;
-}
-
-.pomodoro-task-path input[type='checkbox']:checked:after {
-    width: 0.7rem;
-    height: 0.7rem;
 }
 </style>
