@@ -34,7 +34,6 @@
 		"typescript": "5.2.2"
 	},
 	"dependencies": {
-		"obsidian-daily-notes-interface": "^0.9.4",
-		"parsimmon": "^1.18.1"
+		"obsidian-daily-notes-interface": "^0.9.4"
 	}
 }

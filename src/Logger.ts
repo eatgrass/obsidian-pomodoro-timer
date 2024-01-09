@@ -10,8 +10,27 @@ export type TimerLog = {
     end: moment.Moment
     mode: Mode
     session: number
-    task?: TaskItem
+    task: TaskItem
     finished: boolean
+}
+
+const DEFAULT_LOG_TASK: TaskItem = {
+    path: '',
+    text: '',
+    name: '',
+    status: '',
+    blockLink: '',
+    checked: false,
+    done: '',
+    due: '',
+    created: '',
+    cancelled: '',
+    scheduled: '',
+    start: '',
+    description: '',
+    priority: '',
+    recurrence: '',
+    tags: [],
 }
 
 export default class Logger {
@@ -39,16 +58,16 @@ export default class Logger {
             return
         }
 
-        // focused file has highest priority
+        // focused file has the highest priority
         if (
             settings.logFocused &&
-            state.task?.file &&
-            state.task.file.endsWith('md')
+            state.task?.path &&
+            state.task.path.endsWith('md')
         ) {
             // return this.app.get state.task.path
             // this.plugin.app.vault
             const file = this.plugin.app.vault.getAbstractFileByPath(
-                state.task.file,
+                state.task.path,
             )
             if (file && file instanceof TFile) {
                 return file
@@ -73,10 +92,7 @@ export default class Logger {
                     path += '.md'
                 }
                 try {
-                    return await utils.ensureFileExists(
-                        this.plugin.app,
-                        path,
-                    )
+                    return await utils.ensureFileExists(this.plugin.app, path)
                 } catch (error) {
                     if (error instanceof Error) {
                         new Notice(error.message)
@@ -94,7 +110,9 @@ export default class Logger {
             begin: moment(state.startTime),
             end: moment(),
             session: state.duration,
-            task: state.task,
+            task: state.task
+                ? { ...DEFAULT_LOG_TASK, ...state.task }
+                : DEFAULT_LOG_TASK,
             finished: state.count == state.elapsed,
         }
     }

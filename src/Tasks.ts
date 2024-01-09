@@ -1,28 +1,40 @@
 import type PomodoroTimerPlugin from 'main'
-import {
-    MarkdownView,
-    type CachedMetadata,
-    type Pos,
-    type TFile,
-} from 'obsidian'
-import { extractTags } from 'utils'
+import { MarkdownView, type CachedMetadata, type TFile } from 'obsidian'
+import { extractTaskComponents } from 'utils'
 import { writable, type Readable, type Writable } from 'svelte/store'
 
 const LIST_ITEM_REGEX = /^[\s>]*(\d+\.|\d+\)|\*|-|\+)\s*(\[.{0,1}\])?\s*(.*)$/mu
+import {
+    DataviewTaskSerializer,
+    DefaultTaskSerializer,
+    type TaskDeserializer,
+    DEFAULT_SYMBOLS,
+} from 'serializer'
+import type { TaskFormat } from 'Settings'
+import type { TaskDetails } from 'serializer'
+
+const serializers: Record<TaskFormat, TaskDeserializer> = {
+    TASKS: new DefaultTaskSerializer(DEFAULT_SYMBOLS),
+    DATAVIEW: new DataviewTaskSerializer(),
+}
 
 export type TaskItem = {
-    file: string
-    symbol: string
+    path: string
+    text: string
     name: string
-    tags: string[]
-    line: number
-    lineCount: number
-    list: number
-    position: Pos
-    blockId?: string
-    parent?: number
     status: string
+    blockLink: string
     checked: boolean
+    done?: string
+    due?: string
+    created?: string
+    cancelled?: string
+    scheduled?: string
+    start?: string
+    description: string
+    priority: string
+    recurrence: string
+    tags: string[]
 }
 
 export type TaskStore = {
@@ -71,7 +83,14 @@ export default class Tasks implements Readable<TaskStore> {
                 'changed',
                 (file: TFile, content: string, cache: CachedMetadata) => {
                     if (file.extension === 'md' && file == this.state.file) {
-                        let tasks = resolveTasks(file, content, cache)
+                        let serializer =
+                            serializers[this.plugin.getSettings().taskFormat]
+                        let tasks = resolveTasks(
+                            serializer,
+                            file,
+                            content,
+                            cache,
+                        )
                         this._store.update((state) => {
                             state.list = tasks
                             return state
@@ -85,7 +104,10 @@ export default class Tasks implements Readable<TaskStore> {
     private getFileTasks(file?: TFile) {
         if (file) {
             this.plugin.app.vault.cachedRead(file).then((c) => {
+                let serializer =
+                    serializers[this.plugin.getSettings().taskFormat]
                 let tasks = resolveTasks(
+                    serializer,
                     file,
                     c,
                     this.plugin.app.metadataCache.getFileCache(file),
@@ -130,6 +152,7 @@ export default class Tasks implements Readable<TaskStore> {
 }
 
 function resolveTasks(
+    deserializer: TaskDeserializer,
     file: TFile,
     content: string,
     metadata: CachedMetadata | null,
@@ -140,61 +163,39 @@ function resolveTasks(
 
     let cache: Record<number, TaskItem> = {}
     const lines = content.split('\n')
-    // Place all of the values in the cache before resolving children & metadata relationships.
     for (let rawElement of metadata.listItems || []) {
         if (rawElement.task) {
-            // Match on the first line to get the symbol and first line of text.
-            let rawMatch = LIST_ITEM_REGEX.exec(
-                lines[rawElement.position.start.line],
-            )
+            let lineNr = rawElement.position.start.line
+            let line = lines[lineNr]
+            let rawMatch = LIST_ITEM_REGEX.exec(line)
             if (!rawMatch) continue
 
-            // And then strip unnecessary spacing from the remaining lines.
-            let textParts = [rawMatch[3]]
-                .concat(
-                    lines.slice(
-                        rawElement.position.start.line + 1,
-                        rawElement.position.end.line + 1,
-                    ),
-                )
-                .map((t) => t.trim())
-            // let textWithNewline = textParts.join('\n')
-            let textNoNewline = textParts.join(' ')
-
-            // Find the list that we are a part of by line.
-            let containingListId = (metadata.sections || []).findIndex(
-                (s) =>
-                    s.type == 'list' &&
-                    s.position.start.line <= rawElement.position.start.line &&
-                    s.position.end.line >= rawElement.position.start.line,
-            )
-
-            // Construct universal information about this element (before tasks).
+            const components = extractTaskComponents(line)
+            if (!components) {
+                continue
+            }
+            let detail = deserializer.deserialize(components.body)
+            const dateformat = 'YYYY-MM-DD'
             let item: TaskItem = {
-                file: file.path,
-                symbol: rawMatch[1],
-                name: textNoNewline,
-                tags: extractTags(textNoNewline),
-                line: rawElement.position.start.line,
-                lineCount:
-                    rawElement.position.end.line -
-                    rawElement.position.start.line +
-                    1,
-                list:
-                    containingListId == -1
-                        ? -1
-                        : (metadata.sections || [])[containingListId].position
-                              .start.line,
-                position: rawElement.position,
-                blockId: rawElement.id,
-                status: rawElement.task,
+                text: line,
+                path: file.path,
+                name: detail.description,
+                status: components.status,
+                blockLink: components.blockLink,
                 checked: rawElement.task != '' && rawElement.task != ' ',
+                description: detail.description,
+                done: detail.doneDate?.format(dateformat),
+                due: detail.dueDate?.format(dateformat),
+                created: detail.createdDate?.format(dateformat),
+                cancelled: detail.cancelledDate?.format(dateformat),
+                scheduled: detail.scheduledDate?.format(dateformat),
+                start: detail.startDate?.format(dateformat),
+                priority: detail.priority,
+                recurrence: detail.recurrenceRule,
+                tags: detail.tags,
             }
 
-            if (rawElement.parent >= 0 && rawElement.parent != item.line)
-                item.parent = rawElement.parent
-
-            cache[item.line] = item
+            cache[lineNr] = item
         }
     }
 
