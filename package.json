@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-pomodoro-timer",
-	"version": "1.1.1",
+	"version": "1.1.2",
 	"description": "A pomodoro timer that helps manage your daily focus",
 	"main": "main.js",
 	"scripts": {
