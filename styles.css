@@ -24,3 +24,16 @@ If your plugin does not need CSS, delete this file.
     margin-left: 0.5rem;
     cursor: pointer;
 }
+
+.pomodoro-tasks-item-desc * {
+    font-size: 0.8rem !important;
+}
+
+.pomodoro-tasks-item-desc p {
+    width: 100%;
+    text-wrap: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    padding: 0;
+    margin: 0;
+}

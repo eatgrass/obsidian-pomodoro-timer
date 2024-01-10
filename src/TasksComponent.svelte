@@ -1,9 +1,15 @@
 <script lang="ts">
+import TaskItemComponent from 'TaskItemComponent.svelte'
 import Tasks, { type TaskItem } from 'Tasks'
 import type Timer from 'Timer'
 import { pinned } from 'stores'
 export let tasks: Tasks
 export let timer: Timer
+export let render: (content: string, el: HTMLElement) => void
+const r = (content: string, el: HTMLElement) => {
+    render(content, el)
+}
+
 let status = ''
 let query = ''
 
@@ -203,7 +209,10 @@ const removeTask = () => {
                                     ><circle cx="12" cy="12" r="10" /></svg
                                 >
                             {/if}
-                            <div>{item.name}</div>
+                            <TaskItemComponent
+                                render={r}
+                                content={item.description}
+                            />
                         </div>
                     </div>
                 {/each}
@@ -251,9 +260,6 @@ const removeTask = () => {
 .pomodoro-tasks-item {
     width: 100%;
     padding: 0.5rem 1rem;
-    font-size: 0.8rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
     display: flex;
 }
 
@@ -284,6 +290,7 @@ const removeTask = () => {
     font-size: 0.8rem;
     border: none;
     border-radius: 0;
+    background: transparent;
 }
 
 .pomodoro-tasks-wrapper input:active {
@@ -324,13 +331,6 @@ const removeTask = () => {
     width: 100%;
     display: flex;
     align-items: center;
-}
-
-.pomodoro-tasks-name div {
-    overflow: hidden;
-    text-wrap: nowrap;
-    flex: 1;
-    text-overflow: ellipsis;
 }
 
 .filter-active {

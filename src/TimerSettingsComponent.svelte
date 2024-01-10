@@ -105,6 +105,7 @@ const updateBreakLen = (e: Event) => {
     border-radius: 0;
     height: 0.8rem;
     text-align: end;
+    background: transparent;
 }
 
 .pomodoro-settings-item input[type='number']:active {
