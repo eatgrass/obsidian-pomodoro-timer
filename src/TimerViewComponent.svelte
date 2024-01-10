@@ -6,6 +6,7 @@ import type Tasks from 'Tasks'
 
 export let timer: Timer
 export let tasks: Tasks
+export let render: (content: string, el: HTMLElement) => void
 
 let extra: 'settings' | 'tasks' | 'close' = 'tasks'
 const offset = 440
@@ -206,7 +207,7 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
 
     <div class="pomodoro-extra">
         {#if extra == 'tasks'}
-            <TasksComponent {tasks} {timer} />
+            <TasksComponent {tasks} {timer} {render} />
         {:else if extra == 'settings'}
             <TimerSettingsComponent />
         {/if}

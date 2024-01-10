@@ -21,9 +21,11 @@ export default class PomodoroTimerPlugin extends Plugin {
         this.tasks = new Tasks(this)
 
         // listen on active file changes
-        derived(this.tasks, ($state) => $state.file).subscribe((active) => {
-			this.timer?.setTask(undefined)
-        })
+        derived(this.tasks, ($state) => $state.file?.path || '').subscribe(
+            () => {
+                this.timer?.setTask(undefined)
+            },
+        )
 
         this.registerView(VIEW_TYPE_TIMER, (leaf) => new TimerView(this, leaf))
 
