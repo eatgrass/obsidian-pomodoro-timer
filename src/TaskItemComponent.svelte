@@ -14,6 +14,8 @@ afterUpdate(() => {
 
 <style>
 .pomodoro-tasks-item-desc {
+    flex: 1;
+    overflow: hidden;
     width: 100%;
     pointer-events: none;
     cursor: pointer;
