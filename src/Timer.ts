@@ -130,7 +130,12 @@ export default class Timer implements Readable<TimerStore> {
     private timeup() {
         let autostart = false
         this.update((state) => {
-            const s = { ...state, task: this.plugin.tracker!.task }
+            let task = this.plugin.tracker!.task
+            task = task ? { ...task } : undefined
+            if (state.mode === 'WORK' && task) {
+                task.actual = task.actual ? task.actual + 1 : 1
+            }
+            const s = { ...state, task }
             this.logger.log(s).then((logFile) => {
                 this.notify(s, logFile)
             })
@@ -177,7 +182,7 @@ export default class Timer implements Readable<TimerStore> {
         return state
     }
 
-    private notify(state: TimerState, logFile?: TFile) {
+    private notify(state: TimerState, logFile: TFile | void) {
         const emoji = state.mode == 'WORK' ? '🍅' : '🥤'
         const text = `${emoji} You have been ${
             state.mode === 'WORK' ? 'working' : 'breaking'

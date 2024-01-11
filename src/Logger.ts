@@ -2,7 +2,7 @@ import { type TimerState, type Mode } from 'Timer'
 import * as utils from 'utils'
 import PomodoroTimerPlugin from 'main'
 import { TFile, Notice, moment } from 'obsidian'
-import type { TaskItem } from 'Tasks'
+import { incrTaskActual, resolveTasks, type TaskItem } from 'Tasks'
 
 export type TimerLog = {
     duration: number
@@ -15,8 +15,8 @@ export type TimerLog = {
 }
 
 const DEFAULT_LOG_TASK: TaskItem = {
-    actual: '',
-    expected: '',
+    actual: 0,
+    expected: 0,
     path: '',
     fileName: '',
     text: '',
@@ -34,6 +34,7 @@ const DEFAULT_LOG_TASK: TaskItem = {
     priority: '',
     recurrence: '',
     tags: [],
+    line: -1,
 }
 
 type LogState = TimerState & { task?: TaskItem }
@@ -45,15 +46,40 @@ export default class Logger {
         this.plugin = plugin
     }
 
-    public async log(state: LogState): Promise<TFile | undefined> {
+    public async log(state: LogState): Promise<TFile | void> {
         const logFile = await this.resolveLogFile(state)
+        const log = this.createLog(state)
         if (logFile) {
-            const logText = await this.toText(state, logFile)
+            const logText = await this.toText(log, logFile)
             if (logText) {
                 await this.plugin.app.vault.append(logFile, `\n${logText}`)
-                return logFile
             }
         }
+
+        // update task item
+        if (this.plugin.getSettings().enableTaskTracking) {
+            if (
+                state.mode === 'WORK' &&
+                log.finished &&
+                state.task?.path &&
+                state.task?.blockLink
+            ) {
+                let file = this.plugin.app.vault.getAbstractFileByPath(
+                    state.task.path,
+                )
+                if (file && file instanceof TFile) {
+                    let f = file as TFile
+                    incrTaskActual(
+                        this.plugin.getSettings().taskFormat,
+                        this.plugin.app,
+                        state.task.blockLink,
+                        f,
+                    )
+                }
+            }
+        }
+
+        return logFile
     }
 
     private async resolveLogFile(state: LogState): Promise<TFile | void> {
@@ -70,8 +96,6 @@ export default class Logger {
             state.task?.path &&
             state.task.path.endsWith('md')
         ) {
-            // return this.app.get state.task.path
-            // this.plugin.app.vault
             const file = this.plugin.app.vault.getAbstractFileByPath(
                 state.task.path,
             )
@@ -123,9 +147,8 @@ export default class Logger {
         }
     }
 
-    private async toText(state: TimerState, file: TFile): Promise<string> {
+    private async toText(log: TimerLog, file: TFile): Promise<string> {
         const settings = this.plugin.getSettings()
-        const log = this.createLog(state)
         if (
             settings.logFormat === 'CUSTOM' &&
             utils.getTemplater(this.plugin.app)
@@ -135,7 +158,7 @@ export default class Logger {
                 this.plugin.app,
                 file,
                 settings.logTemplate,
-                this.createLog(state),
+                log,
             )
         } else {
             // Built-in log: ignore unfinished session
@@ -144,11 +167,9 @@ export default class Logger {
             }
 
             if (settings.logFormat === 'SIMPLE') {
-                return `**${state.mode}(${
-                    state.duration
-                }m)**: ${log.begin.format('HH:mm')} - ${log.end.format(
+                return `**${log.mode}(${log.duration}m)**: ${log.begin.format(
                     'HH:mm',
-                )}`
+                )} - ${log.end.format('HH:mm')}`
             }
 
             if (settings.logFormat === 'VERBOSE') {

@@ -1,6 +1,6 @@
 import type { TaskItem } from 'Tasks'
 import type PomodoroTimerPlugin from 'main'
-import type { TFile } from 'obsidian'
+import { TFile } from 'obsidian'
 import {
     writable,
     type Readable,
@@ -82,11 +82,9 @@ export default class TaskTracker implements TaskTrackerStore {
         })
     }
 
-    public active(task: TaskItem) {
-        console.log(task)
-
-        this.ensureBlockId(task)
-
+    public async active(task: TaskItem) {
+        await this.ensureBlockId(task)
+        console.log(task.actual, task.expected)
         this.store.update((state) => {
             state.task = task
             return state
@@ -102,7 +100,38 @@ export default class TaskTracker implements TaskTrackerStore {
         })
     }
 
-    private ensureBlockId(task: TaskItem) {}
+    private async ensureBlockId(task: TaskItem) {
+        let file = this.plugin.app.vault.getAbstractFileByPath(task.path)
+        if (file && file instanceof TFile) {
+            const f = file as TFile
+            if (f.extension === 'md') {
+                let content = await this.plugin.app.vault.read(f)
+                let lines = content.split('\n')
+                if (lines.length > task.line) {
+                    let line = lines[task.line]
+                    if (task.blockLink) {
+                        if (!line.endsWith(task.blockLink)) {
+                            // block id mismatch?
+                            lines[task.line] += ` ${task.blockLink}`
+                            this.plugin.app.vault.modify(f, lines.join('\n'))
+                            return
+                        }
+                    } else {
+                        // generate block id
+                        let blockId = this.createBlockId()
+                        console.log(blockId)
+                        task.blockLink = blockId
+                        lines[task.line] += ` ${blockId}`
+                        this.plugin.app.vault.modify(f, lines.join('\n'))
+                    }
+                }
+            }
+        }
+    }
+
+    private createBlockId() {
+        return ` ^${Math.random().toString(36).substring(2, 6)}`
+    }
 
     public clear() {
         this.store.update((state) => {

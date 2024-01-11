@@ -141,16 +141,6 @@ export class DefaultTaskSerializer implements TaskDeserializer {
         do {
             // NEW_TASK_FIELD_EDIT_REQUIRED
             matched = false
-            const priorityMatch = line.match(
-                TaskFormatRegularExpressions.priorityRegex,
-            )
-            if (priorityMatch !== null) {
-                priority = this.parsePriority(priorityMatch[1])
-                line = line
-                    .replace(TaskFormatRegularExpressions.priorityRegex, '')
-                    .trim()
-                matched = true
-            }
 
             const pomodorosMatch = line.match(
                 TaskFormatRegularExpressions.pomodorosRegex,
@@ -159,6 +149,17 @@ export class DefaultTaskSerializer implements TaskDeserializer {
                 pomodoros = pomodorosMatch[1]
                 line = line
                     .replace(TaskFormatRegularExpressions.pomodorosRegex, '')
+                    .trim()
+                matched = true
+            }
+
+            const priorityMatch = line.match(
+                TaskFormatRegularExpressions.priorityRegex,
+            )
+            if (priorityMatch !== null) {
+                priority = this.parsePriority(priorityMatch[1])
+                line = line
+                    .replace(TaskFormatRegularExpressions.priorityRegex, '')
                     .trim()
                 matched = true
             }

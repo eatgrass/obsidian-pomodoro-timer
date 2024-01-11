@@ -199,3 +199,4 @@ export function toInlineFieldRegex(innerFieldRegex: RegExp): RegExp {
         .join('')
     return new RegExp(fieldRegex, innerFieldRegex.flags)
 }
+
