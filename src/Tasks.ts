@@ -2,7 +2,6 @@ import PomodoroTimerPlugin from 'main'
 import { type CachedMetadata, type TFile } from 'obsidian'
 import { extractTaskComponents } from 'utils'
 import { writable, derived, type Readable, type Writable } from 'svelte/store'
-import { pinned } from 'stores'
 
 const LIST_ITEM_REGEX = /^[\s>]*(\d+\.|\d+\)|\*|-|\+)\s*(\[.{0,1}\])?\s*(.*)$/mu
 import {
@@ -18,6 +17,7 @@ const serializers: Record<TaskFormat, TaskDeserializer> = {
     TASKS: new DefaultTaskSerializer(DEFAULT_SYMBOLS),
     DATAVIEW: new DataviewTaskSerializer(),
 }
+
 
 export type TaskItem = {
     path: string
@@ -40,11 +40,10 @@ export type TaskItem = {
 }
 
 export type TaskStore = {
-    file?: TFile
     list: TaskItem[]
 }
 
-export default class Tasks implements Readable<TaskStore & { active: string }> {
+export default class Tasks implements Readable<TaskStore> {
     private plugin: PomodoroTimerPlugin
 
     private _store: Writable<TaskStore>
@@ -54,7 +53,6 @@ export default class Tasks implements Readable<TaskStore & { active: string }> {
     private unsubscribers: Unsubscriber[] = []
 
     private state: TaskStore = {
-        file: undefined,
         list: [],
     }
 
@@ -71,29 +69,29 @@ export default class Tasks implements Readable<TaskStore & { active: string }> {
             }),
         )
 
-        this.subscribe = derived(this._store, ($state) => ({
-            ...$state,
-            active: $state.file?.path || '',
-        })).subscribe
-
-        this.plugin.registerEvent(
-            plugin.app.workspace.on('active-leaf-change', () => {
-                if (!this.pinned) {
-                    this.loadActiveFileTasks()
+        this.unsubscribers.push(
+            derived(this.plugin.tracker!, ($tracker) => {
+                return $tracker.file?.path
+            }).subscribe(() => {
+                let file = this.plugin.tracker?.file
+                if (file) {
+                    this.loadFileTasks(file)
+                } else {
+                    this.clearTasks()
                 }
             }),
         )
-        this.unsubscribers.push(
-            pinned.subscribe((p) => {
-                this.pinned = p
-            }),
-        )
+
+        this.subscribe = this._store.subscribe
 
         this.plugin.registerEvent(
             plugin.app.metadataCache.on(
                 'changed',
                 (file: TFile, content: string, cache: CachedMetadata) => {
-                    if (file.extension === 'md' && file == this.state.file) {
+                    if (
+                        file.extension === 'md' &&
+                        file == this.plugin.tracker!.file
+                    ) {
                         let serializer =
                             serializers[this.plugin.getSettings().taskFormat]
                         let tasks = resolveTasks(
@@ -110,21 +108,10 @@ export default class Tasks implements Readable<TaskStore & { active: string }> {
                 },
             ),
         )
-
-        this.plugin.app.workspace.onLayoutReady(() => {
-            this.loadActiveFileTasks()
-        })
     }
 
-    private loadActiveFileTasks() {
-        const file = this.getCurrentFile() || this.state.file
-        if (file && this.state.file != file) {
-            this.getFileTasks(file)
-        }
-    }
-
-    private getFileTasks(file?: TFile) {
-        if (file && file.extension == 'md') {
+    public loadFileTasks(file: TFile) {
+        if (file.extension == 'md') {
             this.plugin.app.vault.cachedRead(file).then((c) => {
                 let serializer =
                     serializers[this.plugin.getSettings().taskFormat]
@@ -135,22 +122,21 @@ export default class Tasks implements Readable<TaskStore & { active: string }> {
                     this.plugin.app.metadataCache.getFileCache(file),
                 )
                 this._store.update(() => ({
-                    file,
                     list: tasks,
-                    active: undefined,
                 }))
             })
         } else {
             this._store.update(() => ({
                 file,
                 list: [],
-                active: undefined,
             }))
         }
     }
 
-    private getCurrentFile(): TFile | null {
-        return this.plugin.app.workspace.getActiveFile()
+    public clearTasks() {
+        this._store.update(() => ({
+            list: [],
+        }))
     }
 
     public destroy() {

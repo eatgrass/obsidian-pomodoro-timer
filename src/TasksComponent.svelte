@@ -1,10 +1,9 @@
 <script lang="ts">
 import TaskItemComponent from 'TaskItemComponent.svelte'
+import type TaskTracker from 'TaskTracker'
 import Tasks, { type TaskItem } from 'Tasks'
-import type Timer from 'Timer'
-import { pinned } from 'stores'
 export let tasks: Tasks
-export let timer: Timer
+export let tracker: TaskTracker
 export let render: (content: string, el: HTMLElement) => void
 const r = (content: string, el: HTMLElement) => {
     render(content, el)
@@ -29,35 +28,33 @@ $: filtered = $tasks
       })
     : []
 
-const selectTask = (item: TaskItem) => {
-    timer.setTask(item)
+const activeTask = (task: TaskItem) => {
+    tracker.active(task)
 }
 
-const togglePin = () => {
-    pinned.update((p) => {
-        return !p
-    })
+const togglePinned = () => {
+    tracker.togglePinned()
 }
 
 const changeTaskName = (e: Event) => {
     let target = e.target as HTMLInputElement
-    timer.updateTaskName(target.value)
+    tracker.setTaskName(target.value)
 }
 
 const removeTask = () => {
-    timer.setTask(undefined)
+    tracker.clear()
 }
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 
-{#if $tasks.file}
+{#if $tracker.file}
     <div class="pomodoro-tasks-wrapper">
         <div class="pomodoro-tasks-header">
             <div class="pomodoro-tasks-header-title">
-                <span class="pomodoro-tasks-pin" on:click={togglePin}>
-                    {#if !$pinned}
+                <span class="pomodoro-tasks-pin" on:click={togglePinned}>
+                    {#if !$tracker.pinned}
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="12"
@@ -97,7 +94,7 @@ const removeTask = () => {
                     {/if}
                 </span>
                 <span class="pomodoro-tasks-file-name">
-                    {$tasks.file.name}
+                    {$tracker.file.name}
                 </span>
                 <span class="pomodoro-tasks-count">
                     {filtered.length} tasks
@@ -105,12 +102,12 @@ const removeTask = () => {
             </div>
             {#if $tasks.list.length > 0}
                 <div class="pomodoro-tasks-active">
-                    {#if $timer.task}
+                    {#if $tracker.task}
                         <div class="pomodoro-tasks-item">
                             <div class="pomodoro-tasks-name">
                                 <input
                                     type="text"
-                                    value={$timer.task?.name}
+                                    value={$tracker.task?.name}
                                     on:input={changeTaskName}
                                 />
                                 <span
@@ -173,7 +170,7 @@ const removeTask = () => {
                 {#each filtered as item}
                     <div
                         on:click={() => {
-                            selectTask(item)
+                            activeTask(item)
                         }}
                         class="pomodoro-tasks-item {item.checked
                             ? 'pomodoro-tasks-checked'

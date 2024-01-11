@@ -29,6 +29,7 @@ export class TimerView extends ItemView {
             props: {
                 timer: this.plugin.timer,
                 tasks: this.plugin.tasks,
+                tracker: this.plugin.tracker,
                 render: (content: string, el: HTMLElement) => {
                     MarkdownRenderer.render(
                         this.plugin.app,

@@ -34,6 +34,8 @@ const DEFAULT_LOG_TASK: TaskItem = {
     tags: [],
 }
 
+type LogState = TimerState & { task?: TaskItem }
+
 export default class Logger {
     private plugin: PomodoroTimerPlugin
 
@@ -41,7 +43,7 @@ export default class Logger {
         this.plugin = plugin
     }
 
-    public async log(state: TimerState): Promise<TFile | undefined> {
+    public async log(state: LogState): Promise<TFile | undefined> {
         const logFile = await this.resolveLogFile(state)
         if (logFile) {
             const logText = await this.toText(state, logFile)
@@ -52,7 +54,7 @@ export default class Logger {
         }
     }
 
-    private async resolveLogFile(state: TimerState): Promise<TFile | void> {
+    private async resolveLogFile(state: LogState): Promise<TFile | void> {
         const settings = this.plugin!.getSettings()
 
         // filter log level
@@ -105,7 +107,7 @@ export default class Logger {
         }
     }
 
-    private createLog(state: TimerState): TimerLog {
+    private createLog(state: LogState): TimerLog {
         return {
             mode: state.mode,
             duration: Math.floor(state.elapsed / 60000),
