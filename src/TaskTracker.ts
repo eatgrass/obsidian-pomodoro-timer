@@ -83,6 +83,10 @@ export default class TaskTracker implements TaskTrackerStore {
     }
 
     public active(task: TaskItem) {
+        console.log(task)
+
+        this.ensureBlockId(task)
+
         this.store.update((state) => {
             state.task = task
             return state
@@ -97,6 +101,8 @@ export default class TaskTracker implements TaskTrackerStore {
             return state
         })
     }
+
+    private ensureBlockId(task: TaskItem) {}
 
     public clear() {
         this.store.update((state) => {

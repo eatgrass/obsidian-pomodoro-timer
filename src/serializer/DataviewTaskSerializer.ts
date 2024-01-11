@@ -1,56 +1,6 @@
 import { DefaultTaskSerializer } from './DefaultTaskSerializer'
 import { Priority } from './TaskModels'
-
-/**
- * Takes a regex of the form 'key:: value' and turns it into a regex that can parse
- * Dataview inline field, i.e either;
- *     * (key:: value)
- *     * [key:: value]
- *
- * There can be an arbitrary amount of horizontal whitespace around the key value pair,
- * and after the '::'
- */
-function toInlineFieldRegex(innerFieldRegex: RegExp): RegExp {
-    /**
-     * First, I'm sorry this looks so bad. Javascript's regex engine lacks some
-     * conveniences from other engines like PCRE (duplicate named groups)
-     * that would've made this easier to express in a readable way.
-     *
-     * The idea here is that we're trying to say, in English:
-     *
-     *     "{@link innerFieldRegex} can either be surrounded by square brackets `[]`
-     *     or parens `()`"
-     *
-     * But there is added complexity because we want to disallow mismatched pairs
-     *   (i.e. no `[key::value) or (key::value]`). And we have to take care to not
-     * introduce new capture groups, since innerFieldRegex may contain capture groups
-     * and depend on the numbering.
-     *
-     * We achieve this by using a variable length, positive lookahead to assert
-     * "Only match a the first element of the pair if the other element is somewhere further in the string".
-     *
-     * This is likely somewhat fragile.
-     *
-     */
-    const fieldRegex = (
-        [
-            '(?:',
-            /*     */ /(?=[^\]]+\])\[/, // Try to match '[' if there's a ']' later in the string
-            /*    */ '|',
-            /*     */ /(?=[^)]+\))\(/, // Otherwise, match '(' if there's a ')' later in the string
-            ')',
-            / */,
-            innerFieldRegex,
-            / */,
-            /[)\]]/,
-            /(?: *,)?/, // Allow trailing comma, enables workaround from #1913 for rendering issue
-            /$/, // Regexes are matched from the end of the string forwards
-        ] as const
-    )
-        .map((val) => (val instanceof RegExp ? val.source : val))
-        .join('')
-    return new RegExp(fieldRegex, innerFieldRegex.flags)
-}
+import { toInlineFieldRegex } from 'utils'
 
 /**
  * A symbol map that corresponds to a task format that strives to be compatible with
@@ -73,6 +23,7 @@ export const DATAVIEW_SYMBOLS = {
     doneDateSymbol: 'completion::',
     cancelledDateSymbol: 'cancelled::',
     recurrenceSymbol: 'repeat::',
+    pomodorosSymbol: '🍅::',
     TaskFormatRegularExpressions: {
         priorityRegex: toInlineFieldRegex(
             /priority:: *(highest|high|medium|low|lowest)/,
@@ -88,6 +39,7 @@ export const DATAVIEW_SYMBOLS = {
             /cancelled:: *(\d{4}-\d{2}-\d{2})/,
         ),
         recurrenceRegex: toInlineFieldRegex(/repeat:: *([a-zA-Z0-9, !]+)/),
+        pomodorosRegex: toInlineFieldRegex(/🍅:: *(\d*\/?\d*)/),
     },
 } as const
 

@@ -12,12 +12,12 @@ import {
 } from 'serializer'
 import type { TaskFormat } from 'Settings'
 import type { Unsubscriber } from 'svelte/motion'
+import * as exp from 'constants'
 
 const serializers: Record<TaskFormat, TaskDeserializer> = {
     TASKS: new DefaultTaskSerializer(DEFAULT_SYMBOLS),
     DATAVIEW: new DataviewTaskSerializer(),
 }
-
 
 export type TaskItem = {
     path: string
@@ -36,6 +36,8 @@ export type TaskItem = {
     description: string
     priority: string
     recurrence: string
+    expected: string
+    actual: string
     tags: string[]
 }
 
@@ -55,8 +57,6 @@ export default class Tasks implements Readable<TaskStore> {
     private state: TaskStore = {
         list: [],
     }
-
-    private pinned: boolean = false
 
     constructor(plugin: PomodoroTimerPlugin) {
         this.plugin = plugin
@@ -170,6 +170,10 @@ function resolveTasks(
                 continue
             }
             let detail = deserializer.deserialize(components.body)
+
+            let [actual = '', expected = ''] = detail.pomodoros.split('/')
+            console.log(actual, expected)
+
             const dateformat = 'YYYY-MM-DD'
             let item: TaskItem = {
                 text: line,
@@ -188,6 +192,8 @@ function resolveTasks(
                 start: detail.startDate?.format(dateformat),
                 priority: detail.priority,
                 recurrence: detail.recurrenceRule,
+                expected: expected,
+                actual: actual,
                 tags: detail.tags,
             }
 

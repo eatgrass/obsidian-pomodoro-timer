@@ -15,6 +15,8 @@ export type TimerLog = {
 }
 
 const DEFAULT_LOG_TASK: TaskItem = {
+    actual: '',
+    expected: '',
     path: '',
     fileName: '',
     text: '',

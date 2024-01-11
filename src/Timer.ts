@@ -50,8 +50,6 @@ export default class Timer implements Readable<TimerStore> {
 
     public subscribe
 
-    private pinned: boolean = false
-
     constructor(plugin: PomodoroTimerPlugin) {
         this.plugin = plugin
         this.logger = new Logger(plugin)

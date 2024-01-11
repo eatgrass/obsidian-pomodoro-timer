@@ -16,6 +16,7 @@ export type TaskDetails = {
     doneDate: Moment | null
     cancelledDate: Moment | null
     recurrenceRule: string
+	pomodoros: string
     tags: string[]
 }
 
