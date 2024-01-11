@@ -147,7 +147,7 @@ export default class Tasks implements Readable<TaskStore> {
 }
 
 const POMODORO_REGEX = new RegExp(
-    '(?:(?=[^\\]]+\\])\\[|(?=[^)]+\\))\\() *🍅:: *(\\d*\\/?\\d*) *[)\\]](?: *,)?',
+    '(?:(?=[^\\]]+\\])\\[|(?=[^)]+\\))\\() *🍅:: *(\\d* *\\/? *\\d*) *[)\\]](?: *,)?',
 )
 
 export async function incrTaskActual(
@@ -186,9 +186,11 @@ export async function incrTaskActual(
                     let [actual = '0', expected] = pomodoros.split('/')
                     let text = `🍅:: ${parseInt(actual) + 1}`
                     if (expected !== undefined) {
-                        text += `/${expected}`
+                        text += `/${expected.trim()}`
                     }
-                    line = line.replace(/🍅:: *(\d*\/?\d*)/, text).trim()
+                    console.log(text)
+                    line = line.replace(/🍅:: *(\d* *\/? *\d* *)/, text).trim()
+                    console.log(line)
                     lines[lineNr] = line
                 } else {
                     let detail = DESERIALIZERS[format].deserialize(

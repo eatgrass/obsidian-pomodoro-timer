@@ -39,7 +39,7 @@ export const DATAVIEW_SYMBOLS = {
             /cancelled:: *(\d{4}-\d{2}-\d{2})/,
         ),
         recurrenceRegex: toInlineFieldRegex(/repeat:: *([a-zA-Z0-9, !]+)/),
-        pomodorosRegex: toInlineFieldRegex(/🍅:: *(\d*\/?\d*)/),
+        pomodorosRegex: toInlineFieldRegex(/🍅:: *(\d* *\/? *\d*)/),
     },
 } as const
 

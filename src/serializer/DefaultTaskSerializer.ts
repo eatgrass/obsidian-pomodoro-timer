@@ -74,7 +74,7 @@ export const DEFAULT_SYMBOLS: DefaultTaskSerializerSymbols = {
         doneDateRegex: /✅ *(\d{4}-\d{2}-\d{2})$/u,
         cancelledDateRegex: /❌ *(\d{4}-\d{2}-\d{2})$/u,
         recurrenceRegex: /🔁 ?([a-zA-Z0-9, !]+)$/iu,
-        pomodorosRegex: toInlineFieldRegex(/🍅:: *(\d*\/?\d*)/),
+        pomodorosRegex: toInlineFieldRegex(/🍅:: *(\d* *\/? *\d*)/),
     },
 } as const
 
