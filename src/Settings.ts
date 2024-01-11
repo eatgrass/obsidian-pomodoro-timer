@@ -17,6 +17,7 @@ export interface Settings {
     useStatusBarTimer: boolean
     notificationSound: boolean
     enableTaskTracking: boolean
+    showTaskProgress: boolean
     customSound: string
     logFile: LogFileType
     logFocused: boolean
@@ -36,6 +37,7 @@ export default class PomodoroSettings extends PluginSettingTab {
         useStatusBarTimer: false,
         notificationSound: true,
         customSound: '',
+        showTaskProgress: true,
         enableTaskTracking: false,
         logFile: 'NONE',
         logFocused: false,
@@ -152,6 +154,14 @@ export default class PomodoroSettings extends PluginSettingTab {
                 toggle.setValue(this._settings.enableTaskTracking)
                 toggle.onChange((value) => {
                     this.updateSettings({ enableTaskTracking: value })
+                })
+            })
+        new Setting(containerEl)
+            .setName('Show Task Progress Background')
+            .addToggle((toggle) => {
+                toggle.setValue(this._settings.showTaskProgress)
+                toggle.onChange((value) => {
+                    this.updateSettings({ showTaskProgress: value })
                 })
             })
         new Setting(containerEl)

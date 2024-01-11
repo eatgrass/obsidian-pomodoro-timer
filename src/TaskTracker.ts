@@ -84,7 +84,6 @@ export default class TaskTracker implements TaskTrackerStore {
 
     public async active(task: TaskItem) {
         await this.ensureBlockId(task)
-        console.log(task.actual, task.expected)
         this.store.update((state) => {
             state.task = task
             return state
@@ -119,7 +118,6 @@ export default class TaskTracker implements TaskTrackerStore {
                     } else {
                         // generate block id
                         let blockId = this.createBlockId()
-                        console.log(blockId)
                         task.blockLink = blockId
                         lines[task.line] += ` ${blockId}`
                         this.plugin.app.vault.modify(f, lines.join('\n'))

@@ -31,9 +31,10 @@ If your plugin does not need CSS, delete this file.
 
 .pomodoro-tasks-item-desc p {
     width: 100%;
-    text-wrap: nowrap;
-    text-overflow: ellipsis;
-    overflow: hidden;
+    line-height: 1.1;
+    height: 2.2em;
     padding: 0;
     margin: 0;
+    overflow: hidden;
+    line-break: anywhere;
 }

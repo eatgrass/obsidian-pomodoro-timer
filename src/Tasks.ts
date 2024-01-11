@@ -188,9 +188,7 @@ export async function incrTaskActual(
                     if (expected !== undefined) {
                         text += `/${expected.trim()}`
                     }
-                    console.log(text)
                     line = line.replace(/🍅:: *(\d* *\/? *\d* *)/, text).trim()
-                    console.log(line)
                     lines[lineNr] = line
                 } else {
                     let detail = DESERIALIZERS[format].deserialize(
@@ -238,7 +236,7 @@ export function resolveTasks(
             }
             let detail = DESERIALIZERS[format].deserialize(components.body)
 
-            let [actual = '0', expected = '0'] = detail.pomodoros.split('/')
+            let [actual, expected] = detail.pomodoros.split('/')
 
             const dateformat = 'YYYY-MM-DD'
             let item: TaskItem = {
@@ -258,8 +256,8 @@ export function resolveTasks(
                 start: detail.startDate?.format(dateformat),
                 priority: detail.priority,
                 recurrence: detail.recurrenceRule,
-                expected: parseInt(expected),
-                actual: parseInt(actual),
+                expected: expected ? parseInt(expected) : 0,
+                actual: actual === '' ? 0 : parseInt(actual),
                 tags: detail.tags,
                 line: lineNr,
             }

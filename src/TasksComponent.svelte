@@ -2,6 +2,7 @@
 import TaskItemComponent from 'TaskItemComponent.svelte'
 import type TaskTracker from 'TaskTracker'
 import Tasks, { type TaskItem } from 'Tasks'
+import { settings } from 'stores'
 export let tasks: Tasks
 export let tracker: TaskTracker
 export let render: (content: string, el: HTMLElement) => void
@@ -43,6 +44,45 @@ const changeTaskName = (e: Event) => {
 
 const removeTask = () => {
     tracker.clear()
+}
+
+const progress = (item: TaskItem) => {
+    if (!$settings.showTaskProgress) {
+        return 0
+    }
+    if (item.expected > 0 && item.actual >= 0) {
+        return ((item.actual / item.expected) * 100).toFixed(2)
+    }
+    return 0
+}
+
+const progressText = (item: TaskItem) => {
+    let { actual, expected } = item
+    if (expected > 0) {
+        let unfinished = expected - actual
+        let max = Math.max(expected, actual)
+        if (max > 10) {
+            if (unfinished > 0) {
+                return `🍅 x ${actual}  ◌ x ${unfinished}`
+            } else {
+                return `🍅 x ${expected}  🥫 x ${Math.abs(unfinished)}`
+            }
+        } else {
+            if (unfinished > 0) {
+                return `${'🍅'.repeat(actual)}${'◌'.repeat(unfinished)}`
+            } else {
+                return `${'🍅'.repeat(expected)}${'🥫'.repeat(
+                    Math.abs(unfinished),
+                )}`
+            }
+        }
+    } else {
+        return actual > 10
+            ? `🍅 x ${actual}`
+            : actual > 0
+              ? `${'🍅'.repeat(actual)}`
+              : `- -`
+    }
 }
 </script>
 
@@ -172,6 +212,9 @@ const removeTask = () => {
                         on:click={() => {
                             activeTask(item)
                         }}
+                        style="background: linear-gradient(to right, rgba(var(--color-green-rgb),0.25) {progress(
+                            item,
+                        )}%, transparent 0%)"
                         class="pomodoro-tasks-item {item.checked
                             ? 'pomodoro-tasks-checked'
                             : ''}"
@@ -210,6 +253,9 @@ const removeTask = () => {
                                 render={r}
                                 content={item.description}
                             />
+                        </div>
+                        <div class="pomodoro-tasks-progress">
+                            {progressText(item)}
                         </div>
                     </div>
                 {/each}
@@ -255,6 +301,8 @@ const removeTask = () => {
 }
 
 .pomodoro-tasks-item {
+    display: flex;
+    flex-direction: column;
     width: 100%;
     padding: 0.5rem 1rem;
     display: flex;
@@ -327,7 +375,7 @@ const removeTask = () => {
 .pomodoro-tasks-name {
     width: 100%;
     display: flex;
-    align-items: center;
+    align-items: baseline;
 }
 
 .filter-active {
@@ -339,7 +387,7 @@ const removeTask = () => {
     border-top: 1px solid var(--background-modifier-border);
 }
 
-.pomodoro-tasks-checked {
+.pomodoro-tasks-checked .pomodoro-tasks-name {
     text-decoration: line-through;
     color: var(--text-muted);
 }
@@ -351,5 +399,12 @@ const removeTask = () => {
 
 .pomodoro-tasks-remove {
     cursor: pointer;
+}
+.pomodoro-tasks-progress {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-align: end;
+    text-wrap: nowrap;
+    overflow: hidden;
 }
 </style>
