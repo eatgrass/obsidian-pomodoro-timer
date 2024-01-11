@@ -12,6 +12,7 @@ This plugin integrates a customizable Pomodoro timer into your Obsidian workspac
 -   **Audible Alerts**: Stay on track with audio notifications signaling the end of each session.
 -   **Status Bar Display**: Monitor your progress directly from Obsidian's status bar to keep focusing.
 -   **Daily Note Integration**: Automatically log your sessions in your daily notes for better tracking.
+-   **Task Tracking**: Automatically refresh the 'actual time' field for the task in focus.
 
 ## Notification
 
@@ -22,6 +23,18 @@ This plugin integrates a customizable Pomodoro timer into your Obsidian workspac
    For example: your audio file is in `AudioFiles` and named `notification.mp3`, your path would be `AudioFiles/notification.mp3`.
    **Don't forget the file extension (like `.mp3`, `.wav` etc.).**
 3. Click the `play` button next to the path to verify the audio
+
+## Task Tracking
+
+To activate this feature, first enable it in the settings. Then add pomodoros inline-field after your task's text description as below. The pomodoro timer will then automatically update the actual count at the end of each work session.
+
+**Important: Ensure to add this inline-field before the [Tasks](https://github.com/obsidian-tasks-group/obsidian-tasks) plugin's fields. Placing it elsewhere may result in incorrect rendering within the Tasks Plugin.**
+
+```markdown
+-   [ ] Task with specified expected and actual pomodoros fields [🍅:: 3/10]
+-   [ ] Task with only the actual pomodoros field [🍅:: 5]
+-   [ ] With Task plugin enabled [🍅:: 5] ➕ 2023-12-29 📅 2024-01-10
+```
 
 ## Log
 
@@ -67,9 +80,9 @@ For those requiring more detailed logging, consider setting up a custom [log tem
     fileName: string,     // task file name
     text: string,         // the full text of the task
     name: string,         // editable task name (default: task description)
-    status: string,       // task checkbox symbol 
+    status: string,       // task checkbox symbol
     blockLink: string,    // block link id of the task
-    checked: boolean,   
+    checked: boolean,     // if the task's checkbox checked
     done: string,         // done date
     due: string,          // due date
     created: string,      // created date
@@ -80,6 +93,8 @@ For those requiring more detailed logging, consider setting up a custom [log tem
     priority: string,     // task priority
     recurrence: string,   // task recurrence rule
     tags: string[],       // task tags
+	expected: number,     // expected pomodoros
+	actual: number        // actual pomodoros
 }
 ```
 

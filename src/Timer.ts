@@ -6,8 +6,6 @@ import type { Readable } from 'svelte/store'
 import { Notice, TFile } from 'obsidian'
 import Logger from 'Logger'
 import DEFAULT_NOTIFICATION from 'Notification'
-import type { TaskItem } from 'Tasks'
-import { pinned } from 'stores'
 import type { Unsubscriber } from 'svelte/motion'
 
 export type Mode = 'WORK' | 'BREAK'
@@ -29,7 +27,6 @@ export type TimerState = {
     breakLen: number
     count: number
     duration: number
-    task?: Partial<TaskItem>
 }
 
 export type TimerStore = TimerState & { remained: TimerRemained }
@@ -53,8 +50,6 @@ export default class Timer implements Readable<TimerStore> {
 
     public subscribe
 
-    private pinned: boolean = false
-
     constructor(plugin: PomodoroTimerPlugin) {
         this.plugin = plugin
         this.logger = new Logger(plugin)
@@ -71,7 +66,6 @@ export default class Timer implements Readable<TimerStore> {
             inSession: false,
             duration: plugin.getSettings().workLen,
             count,
-            task: undefined,
         }
 
         let store = writable(this.state)
@@ -89,12 +83,6 @@ export default class Timer implements Readable<TimerStore> {
                 this.state = state
             }),
         )
-        this.unsubscribers.push(
-            pinned.subscribe((p) => {
-                this.pinned = p
-            }),
-        )
-        //
         this.clock = Worker()
         this.clock.onmessage = ({ data }: any) => {
             this.tick(data as number)
@@ -142,7 +130,12 @@ export default class Timer implements Readable<TimerStore> {
     private timeup() {
         let autostart = false
         this.update((state) => {
-            const s = { ...state }
+            let task = this.plugin.tracker!.task
+            task = task ? { ...task } : undefined
+            if (state.mode === 'WORK' && task) {
+                task.actual = task.actual ? task.actual + 1 : 1
+            }
+            const s = { ...state, task }
             this.logger.log(s).then((logFile) => {
                 this.notify(s, logFile)
             })
@@ -172,27 +165,6 @@ export default class Timer implements Readable<TimerStore> {
         })
     }
 
-    public setTask(task?: Partial<TaskItem>) {
-        this.update((state) => {
-            state.task = task
-            return state
-        })
-    }
-
-    // private resolveFocused(task?: Task) {
-    //     if (task) {
-    //         return task
-    //     }
-    //     let file = this.plugin!.app.workspace.getActiveFile()
-    //     if (file) {
-    //         return {
-    //             path: file.path,
-    //             name: file.name,
-    //         }
-    //     }
-    //     return undefined
-    // }
-
     private endSession(state: TimerState) {
         // setup new session
         if (state.breakLen == 0) {
@@ -210,7 +182,7 @@ export default class Timer implements Readable<TimerStore> {
         return state
     }
 
-    private notify(state: TimerState, logFile?: TFile) {
+    private notify(state: TimerState, logFile: TFile | void) {
         const emoji = state.mode == 'WORK' ? '🍅' : '🥤'
         const text = `${emoji} You have been ${
             state.mode === 'WORK' ? 'working' : 'breaking'
@@ -259,7 +231,7 @@ export default class Timer implements Readable<TimerStore> {
     public reset() {
         this.update((state) => {
             if (state.elapsed > 0) {
-                this.logger.log({ ...state })
+                this.logger.log({ ...state, task: this.plugin.tracker!.task })
             }
 
             state.duration =
@@ -267,8 +239,9 @@ export default class Timer implements Readable<TimerStore> {
             state.count = state.duration * 60 * 1000
             state.inSession = false
             state.running = false
-            if (!this.pinned) {
-                state.task = undefined
+
+            if (!this.plugin.tracker!.pinned) {
+                this.plugin.tracker!.clear()
             }
             this.clock.postMessage(false)
             state.startTime = null
@@ -321,15 +294,6 @@ export default class Timer implements Readable<TimerStore> {
                 state.count = state.duration * 60 * 1000
             }
 
-            return state
-        })
-    }
-
-    public updateTaskName(name: string) {
-        this.update((state) => {
-            if (state.task) {
-                state.task.name = name
-            }
             return state
         })
     }

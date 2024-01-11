@@ -16,6 +16,8 @@ export interface Settings {
     autostart: boolean
     useStatusBarTimer: boolean
     notificationSound: boolean
+    enableTaskTracking: boolean
+    showTaskProgress: boolean
     customSound: string
     logFile: LogFileType
     logFocused: boolean
@@ -35,6 +37,8 @@ export default class PomodoroSettings extends PluginSettingTab {
         useStatusBarTimer: false,
         notificationSound: true,
         customSound: '',
+        showTaskProgress: true,
+        enableTaskTracking: false,
         logFile: 'NONE',
         logFocused: false,
         logPath: '',
@@ -93,7 +97,7 @@ export default class PomodoroSettings extends PluginSettingTab {
         containerEl.empty()
 
         new Setting(containerEl)
-            .setName('Enable status bar timer')
+            .setName('Enable Status Bar Timer')
             .addToggle((toggle) => {
                 toggle.setValue(this._settings.useStatusBarTimer)
                 toggle.onChange((value) => {
@@ -104,7 +108,7 @@ export default class PomodoroSettings extends PluginSettingTab {
         new Setting(containerEl).setHeading().setName('Notification')
 
         new Setting(containerEl)
-            .setName('Use system notification')
+            .setName('Use System Notification')
             .addToggle((toggle) => {
                 toggle.setValue(this._settings.useSystemNotification)
                 toggle.onChange((value) => {
@@ -112,7 +116,7 @@ export default class PomodoroSettings extends PluginSettingTab {
                 })
             })
         new Setting(containerEl)
-            .setName('Notification sound')
+            .setName('Sound Notification')
             .addToggle((toggle) => {
                 toggle.setValue(this._settings.notificationSound)
                 toggle.onChange((value) => {
@@ -122,7 +126,7 @@ export default class PomodoroSettings extends PluginSettingTab {
 
         if (this._settings.notificationSound) {
             new Setting(containerEl)
-                .setName('Custom sound')
+                .setName('Custom Notification Audio')
                 .addText((text) => {
                     text.inputEl.style.width = '100%'
                     text.setPlaceholder('path/to/sound.mp3')
@@ -142,7 +146,26 @@ export default class PomodoroSettings extends PluginSettingTab {
 
         new Setting(containerEl).setHeading().setName('Task')
         new Setting(containerEl)
-            .setName('Task format')
+            .setName('Enable Task Tracking')
+            .setDesc(
+                'Important: Enabling this feature will automatically add a block ID when activating a task, unless a block ID is already present.',
+            )
+            .addToggle((toggle) => {
+                toggle.setValue(this._settings.enableTaskTracking)
+                toggle.onChange((value) => {
+                    this.updateSettings({ enableTaskTracking: value })
+                })
+            })
+        new Setting(containerEl)
+            .setName('Show Task Progress Background')
+            .addToggle((toggle) => {
+                toggle.setValue(this._settings.showTaskProgress)
+                toggle.onChange((value) => {
+                    this.updateSettings({ showTaskProgress: value })
+                })
+            })
+        new Setting(containerEl)
+            .setName('Task Format')
             .addDropdown((dropdown) => {
                 dropdown.selectEl.style.width = '160px'
                 dropdown.addOptions({
@@ -159,7 +182,7 @@ export default class PomodoroSettings extends PluginSettingTab {
             })
 
         new Setting(containerEl).setHeading().setName('Log')
-        new Setting(containerEl).setName('Log file').addDropdown((dropdown) => {
+        new Setting(containerEl).setName('Log File').addDropdown((dropdown) => {
             dropdown.selectEl.style.width = '160px'
             dropdown.addOptions({
                 NONE: 'None',
@@ -187,7 +210,7 @@ export default class PomodoroSettings extends PluginSettingTab {
             }
 
             new Setting(containerEl)
-                .setName('Log level')
+                .setName('Log Level')
                 .addDropdown((dropdown) => {
                     dropdown.selectEl.style.width = '160px'
                     dropdown.addOptions({
@@ -217,7 +240,7 @@ export default class PomodoroSettings extends PluginSettingTab {
                 )})`
             }
             new Setting(containerEl)
-                .setName('Log format')
+                .setName('Log Format')
                 .setDesc(example)
                 .addDropdown((dropdown) => {
                     dropdown.selectEl.style.width = '160px'
@@ -280,7 +303,7 @@ export default class PomodoroSettings extends PluginSettingTab {
         }
 
         new Setting(containerEl).addButton((button) => {
-            button.setButtonText('Restore settings')
+            button.setButtonText('Restore Settings')
             button.onClick(() => {
                 this.updateSettings(PomodoroSettings.DEFAULT_SETTINGS, true)
             })

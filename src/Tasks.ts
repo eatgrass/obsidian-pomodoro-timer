@@ -1,10 +1,8 @@
 import PomodoroTimerPlugin from 'main'
-import { type CachedMetadata, type TFile } from 'obsidian'
+import { type CachedMetadata, type TFile, type App } from 'obsidian'
 import { extractTaskComponents } from 'utils'
 import { writable, derived, type Readable, type Writable } from 'svelte/store'
-import { pinned } from 'stores'
 
-const LIST_ITEM_REGEX = /^[\s>]*(\d+\.|\d+\)|\*|-|\+)\s*(\[.{0,1}\])?\s*(.*)$/mu
 import {
     DataviewTaskSerializer,
     DefaultTaskSerializer,
@@ -13,8 +11,9 @@ import {
 } from 'serializer'
 import type { TaskFormat } from 'Settings'
 import type { Unsubscriber } from 'svelte/motion'
+import { MarkdownView } from 'obsidian'
 
-const serializers: Record<TaskFormat, TaskDeserializer> = {
+const DESERIALIZERS: Record<TaskFormat, TaskDeserializer> = {
     TASKS: new DefaultTaskSerializer(DEFAULT_SYMBOLS),
     DATAVIEW: new DataviewTaskSerializer(),
 }
@@ -36,15 +35,17 @@ export type TaskItem = {
     description: string
     priority: string
     recurrence: string
+    expected: number
+    actual: number
     tags: string[]
+    line: number
 }
 
 export type TaskStore = {
-    file?: TFile
     list: TaskItem[]
 }
 
-export default class Tasks implements Readable<TaskStore & { active: string }> {
+export default class Tasks implements Readable<TaskStore> {
     private plugin: PomodoroTimerPlugin
 
     private _store: Writable<TaskStore>
@@ -54,11 +55,12 @@ export default class Tasks implements Readable<TaskStore & { active: string }> {
     private unsubscribers: Unsubscriber[] = []
 
     private state: TaskStore = {
-        file: undefined,
         list: [],
     }
 
-    private pinned: boolean = false
+    public static getDeserializer(format: TaskFormat) {
+        return DESERIALIZERS[format]
+    }
 
     constructor(plugin: PomodoroTimerPlugin) {
         this.plugin = plugin
@@ -71,33 +73,31 @@ export default class Tasks implements Readable<TaskStore & { active: string }> {
             }),
         )
 
-        this.subscribe = derived(this._store, ($state) => ({
-            ...$state,
-            active: $state.file?.path || '',
-        })).subscribe
-
-        this.plugin.registerEvent(
-            plugin.app.workspace.on('active-leaf-change', () => {
-                if (!this.pinned) {
-                    this.loadActiveFileTasks()
+        this.unsubscribers.push(
+            derived(this.plugin.tracker!, ($tracker) => {
+                return $tracker.file?.path
+            }).subscribe(() => {
+                let file = this.plugin.tracker?.file
+                if (file) {
+                    this.loadFileTasks(file)
+                } else {
+                    this.clearTasks()
                 }
             }),
         )
-        this.unsubscribers.push(
-            pinned.subscribe((p) => {
-                this.pinned = p
-            }),
-        )
+
+        this.subscribe = this._store.subscribe
 
         this.plugin.registerEvent(
             plugin.app.metadataCache.on(
                 'changed',
                 (file: TFile, content: string, cache: CachedMetadata) => {
-                    if (file.extension === 'md' && file == this.state.file) {
-                        let serializer =
-                            serializers[this.plugin.getSettings().taskFormat]
+                    if (
+                        file.extension === 'md' &&
+                        file == this.plugin.tracker!.file
+                    ) {
                         let tasks = resolveTasks(
-                            serializer,
+                            this.plugin.getSettings().taskFormat,
                             file,
                             content,
                             cache,
@@ -110,47 +110,33 @@ export default class Tasks implements Readable<TaskStore & { active: string }> {
                 },
             ),
         )
-
-        this.plugin.app.workspace.onLayoutReady(() => {
-            this.loadActiveFileTasks()
-        })
     }
 
-    private loadActiveFileTasks() {
-        const file = this.getCurrentFile() || this.state.file
-        if (file && this.state.file != file) {
-            this.getFileTasks(file)
-        }
-    }
-
-    private getFileTasks(file?: TFile) {
-        if (file && file.extension == 'md') {
+    public loadFileTasks(file: TFile) {
+        if (file.extension == 'md') {
             this.plugin.app.vault.cachedRead(file).then((c) => {
-                let serializer =
-                    serializers[this.plugin.getSettings().taskFormat]
                 let tasks = resolveTasks(
-                    serializer,
+                    this.plugin.getSettings().taskFormat,
                     file,
                     c,
                     this.plugin.app.metadataCache.getFileCache(file),
                 )
                 this._store.update(() => ({
-                    file,
                     list: tasks,
-                    active: undefined,
                 }))
             })
         } else {
             this._store.update(() => ({
                 file,
                 list: [],
-                active: undefined,
             }))
         }
     }
 
-    private getCurrentFile(): TFile | null {
-        return this.plugin.app.workspace.getActiveFile()
+    public clearTasks() {
+        this._store.update(() => ({
+            list: [],
+        }))
     }
 
     public destroy() {
@@ -160,8 +146,75 @@ export default class Tasks implements Readable<TaskStore & { active: string }> {
     }
 }
 
-function resolveTasks(
-    deserializer: TaskDeserializer,
+const POMODORO_REGEX = new RegExp(
+    '(?:(?=[^\\]]+\\])\\[|(?=[^)]+\\))\\() *🍅:: *(\\d* *\\/? *\\d*) *[)\\]](?: *,)?',
+)
+
+export async function incrTaskActual(
+    format: TaskFormat,
+    app: App,
+    blockLink: string,
+    file: TFile,
+) {
+    if (file.extension !== 'md') {
+        return
+    }
+
+    let metadata = app.metadataCache.getFileCache(file)
+    let content = await app.vault.read(file)
+
+    if (!content || !metadata) {
+        return
+    }
+
+    const lines = content.split('\n')
+
+    for (let rawElement of metadata.listItems || []) {
+        if (rawElement.task) {
+            let lineNr = rawElement.position.start.line
+            let line = lines[lineNr]
+
+            const components = extractTaskComponents(line)
+            if (!components) {
+                continue
+            }
+
+            if (components.blockLink === blockLink) {
+                const match = components.body.match(POMODORO_REGEX)
+                if (match !== null) {
+                    let pomodoros = match[1]
+                    let [actual = '0', expected] = pomodoros.split('/')
+                    let text = `🍅:: ${parseInt(actual) + 1}`
+                    if (expected !== undefined) {
+                        text += `/${expected.trim()}`
+                    }
+                    line = line.replace(/🍅:: *(\d* *\/? *\d* *)/, text).trim()
+                    lines[lineNr] = line
+                } else {
+                    let detail = DESERIALIZERS[format].deserialize(
+                        components.body,
+                    )
+                    line = line.replace(
+                        detail.description,
+                        `${detail.description} [🍅:: 1]`,
+                    )
+
+                    lines[lineNr] = line
+                }
+
+                app.vault.modify(file, lines.join('\n'))
+                app.metadataCache.trigger('changed', file, content, metadata)
+
+                // refresh view
+                app.workspace.getActiveViewOfType(MarkdownView)?.load()
+                break
+            }
+        }
+    }
+}
+
+export function resolveTasks(
+    format: TaskFormat,
     file: TFile,
     content: string,
     metadata: CachedMetadata | null,
@@ -176,14 +229,15 @@ function resolveTasks(
         if (rawElement.task) {
             let lineNr = rawElement.position.start.line
             let line = lines[lineNr]
-            let rawMatch = LIST_ITEM_REGEX.exec(line)
-            if (!rawMatch) continue
 
             const components = extractTaskComponents(line)
             if (!components) {
                 continue
             }
-            let detail = deserializer.deserialize(components.body)
+            let detail = DESERIALIZERS[format].deserialize(components.body)
+
+            let [actual, expected] = detail.pomodoros.split('/')
+
             const dateformat = 'YYYY-MM-DD'
             let item: TaskItem = {
                 text: line,
@@ -202,7 +256,10 @@ function resolveTasks(
                 start: detail.startDate?.format(dateformat),
                 priority: detail.priority,
                 recurrence: detail.recurrenceRule,
+                expected: expected ? parseInt(expected) : 0,
+                actual: actual === '' ? 0 : parseInt(actual),
                 tags: detail.tags,
+                line: lineNr,
             }
 
             cache[lineNr] = item

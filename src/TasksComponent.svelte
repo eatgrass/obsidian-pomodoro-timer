@@ -1,10 +1,10 @@
 <script lang="ts">
 import TaskItemComponent from 'TaskItemComponent.svelte'
+import type TaskTracker from 'TaskTracker'
 import Tasks, { type TaskItem } from 'Tasks'
-import type Timer from 'Timer'
-import { pinned } from 'stores'
+import { settings } from 'stores'
 export let tasks: Tasks
-export let timer: Timer
+export let tracker: TaskTracker
 export let render: (content: string, el: HTMLElement) => void
 const r = (content: string, el: HTMLElement) => {
     render(content, el)
@@ -29,35 +29,72 @@ $: filtered = $tasks
       })
     : []
 
-const selectTask = (item: TaskItem) => {
-    timer.setTask(item)
+const activeTask = (task: TaskItem) => {
+    tracker.active(task)
 }
 
-const togglePin = () => {
-    pinned.update((p) => {
-        return !p
-    })
+const togglePinned = () => {
+    tracker.togglePinned()
 }
 
 const changeTaskName = (e: Event) => {
     let target = e.target as HTMLInputElement
-    timer.updateTaskName(target.value)
+    tracker.setTaskName(target.value)
 }
 
 const removeTask = () => {
-    timer.setTask(undefined)
+    tracker.clear()
+}
+
+const progress = (item: TaskItem) => {
+    if (!$settings.showTaskProgress) {
+        return 0
+    }
+    if (item.expected > 0 && item.actual >= 0) {
+        return ((item.actual / item.expected) * 100).toFixed(2)
+    }
+    return 0
+}
+
+const progressText = (item: TaskItem) => {
+    let { actual, expected } = item
+    if (expected > 0) {
+        let unfinished = expected - actual
+        let max = Math.max(expected, actual)
+        if (max > 10) {
+            if (unfinished > 0) {
+                return `🍅 x ${actual}  ◌ x ${unfinished}`
+            } else {
+                return `🍅 x ${expected}  🥫 x ${Math.abs(unfinished)}`
+            }
+        } else {
+            if (unfinished > 0) {
+                return `${'🍅'.repeat(actual)}${'◌'.repeat(unfinished)}`
+            } else {
+                return `${'🍅'.repeat(expected)}${'🥫'.repeat(
+                    Math.abs(unfinished),
+                )}`
+            }
+        }
+    } else {
+        return actual > 10
+            ? `🍅 x ${actual}`
+            : actual > 0
+              ? `${'🍅'.repeat(actual)}`
+              : `- -`
+    }
 }
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
 <!-- svelte-ignore a11y-no-static-element-interactions -->
 
-{#if $tasks.file}
+{#if $tracker.file}
     <div class="pomodoro-tasks-wrapper">
         <div class="pomodoro-tasks-header">
             <div class="pomodoro-tasks-header-title">
-                <span class="pomodoro-tasks-pin" on:click={togglePin}>
-                    {#if !$pinned}
+                <span class="pomodoro-tasks-pin" on:click={togglePinned}>
+                    {#if !$tracker.pinned}
                         <svg
                             xmlns="http://www.w3.org/2000/svg"
                             width="12"
@@ -97,7 +134,7 @@ const removeTask = () => {
                     {/if}
                 </span>
                 <span class="pomodoro-tasks-file-name">
-                    {$tasks.file.name}
+                    {$tracker.file.name}
                 </span>
                 <span class="pomodoro-tasks-count">
                     {filtered.length} tasks
@@ -105,12 +142,12 @@ const removeTask = () => {
             </div>
             {#if $tasks.list.length > 0}
                 <div class="pomodoro-tasks-active">
-                    {#if $timer.task}
+                    {#if $tracker.task}
                         <div class="pomodoro-tasks-item">
                             <div class="pomodoro-tasks-name">
                                 <input
                                     type="text"
-                                    value={$timer.task?.name}
+                                    value={$tracker.task?.name}
                                     on:input={changeTaskName}
                                 />
                                 <span
@@ -173,8 +210,11 @@ const removeTask = () => {
                 {#each filtered as item}
                     <div
                         on:click={() => {
-                            selectTask(item)
+                            activeTask(item)
                         }}
+                        style="background: linear-gradient(to right, rgba(var(--color-green-rgb),0.25) {progress(
+                            item,
+                        )}%, transparent 0%)"
                         class="pomodoro-tasks-item {item.checked
                             ? 'pomodoro-tasks-checked'
                             : ''}"
@@ -213,6 +253,9 @@ const removeTask = () => {
                                 render={r}
                                 content={item.description}
                             />
+                        </div>
+                        <div class="pomodoro-tasks-progress">
+                            {progressText(item)}
                         </div>
                     </div>
                 {/each}
@@ -258,6 +301,8 @@ const removeTask = () => {
 }
 
 .pomodoro-tasks-item {
+    display: flex;
+    flex-direction: column;
     width: 100%;
     padding: 0.5rem 1rem;
     display: flex;
@@ -330,7 +375,7 @@ const removeTask = () => {
 .pomodoro-tasks-name {
     width: 100%;
     display: flex;
-    align-items: center;
+    align-items: baseline;
 }
 
 .filter-active {
@@ -342,7 +387,7 @@ const removeTask = () => {
     border-top: 1px solid var(--background-modifier-border);
 }
 
-.pomodoro-tasks-checked {
+.pomodoro-tasks-checked .pomodoro-tasks-name {
     text-decoration: line-through;
     color: var(--text-muted);
 }
@@ -354,5 +399,12 @@ const removeTask = () => {
 
 .pomodoro-tasks-remove {
     cursor: pointer;
+}
+.pomodoro-tasks-progress {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-align: end;
+    text-wrap: nowrap;
+    overflow: hidden;
 }
 </style>

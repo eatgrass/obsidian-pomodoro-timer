@@ -2,6 +2,7 @@ import type { Moment } from 'moment'
 import { Priority, TaskRegularExpressions } from './TaskModels'
 import type { TaskDetails, TaskDeserializer } from '.'
 import { extractHashtags } from 'utils'
+import { toInlineFieldRegex } from 'utils'
 
 /* Interface describing the symbols that {@link DefaultTaskSerializer}
  * uses to serialize and deserialize tasks.
@@ -26,6 +27,7 @@ export interface DefaultTaskSerializerSymbols {
     readonly doneDateSymbol: string
     readonly cancelledDateSymbol: string
     readonly recurrenceSymbol: string
+    readonly pomodorosSymbol: string
     readonly TaskFormatRegularExpressions: {
         priorityRegex: RegExp
         startDateRegex: RegExp
@@ -35,6 +37,7 @@ export interface DefaultTaskSerializerSymbols {
         doneDateRegex: RegExp
         cancelledDateRegex: RegExp
         recurrenceRegex: RegExp
+        pomodorosRegex: RegExp
     }
 }
 
@@ -59,6 +62,7 @@ export const DEFAULT_SYMBOLS: DefaultTaskSerializerSymbols = {
     doneDateSymbol: '✅',
     cancelledDateSymbol: '❌',
     recurrenceSymbol: '🔁',
+    pomodorosSymbol: '🍅::',
     TaskFormatRegularExpressions: {
         // The following regex's end with `$` because they will be matched and
         // removed from the end until none are left.
@@ -70,6 +74,7 @@ export const DEFAULT_SYMBOLS: DefaultTaskSerializerSymbols = {
         doneDateRegex: /✅ *(\d{4}-\d{2}-\d{2})$/u,
         cancelledDateRegex: /❌ *(\d{4}-\d{2}-\d{2})$/u,
         recurrenceRegex: /🔁 ?([a-zA-Z0-9, !]+)$/iu,
+        pomodorosRegex: toInlineFieldRegex(/🍅:: *(\d* *\/? *\d*)/),
     },
 } as const
 
@@ -124,6 +129,7 @@ export class DefaultTaskSerializer implements TaskDeserializer {
         let cancelledDate: Moment | null = null
         let createdDate: Moment | null = null
         let recurrenceRule: string = ''
+        let pomodoros: string = ''
         // Tags that are removed from the end while parsing, but we want to add them back for being part of the description.
         // In the original task description they are possibly mixed with other components
         // (e.g. #tag1 <due date> #tag2), they do not have to all trail all task components,
@@ -135,6 +141,18 @@ export class DefaultTaskSerializer implements TaskDeserializer {
         do {
             // NEW_TASK_FIELD_EDIT_REQUIRED
             matched = false
+
+            const pomodorosMatch = line.match(
+                TaskFormatRegularExpressions.pomodorosRegex,
+            )
+            if (pomodorosMatch !== null) {
+                pomodoros = pomodorosMatch[1]
+                line = line
+                    .replace(TaskFormatRegularExpressions.pomodorosRegex, '')
+                    .trim()
+                matched = true
+            }
+
             const priorityMatch = line.match(
                 TaskFormatRegularExpressions.priorityRegex,
             )
@@ -286,6 +304,7 @@ export class DefaultTaskSerializer implements TaskDeserializer {
             doneDate,
             cancelledDate,
             recurrenceRule,
+            pomodoros,
             tags: extractHashtags(line),
         }
     }
