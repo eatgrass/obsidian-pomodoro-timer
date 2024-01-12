@@ -162,7 +162,6 @@ export default class TaskTracker implements TaskTrackerStore {
                 }
                 return state
             })
-            console.log(this.state)
         }
     }
 }
