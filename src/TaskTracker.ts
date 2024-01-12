@@ -149,4 +149,20 @@ export default class TaskTracker implements TaskTrackerStore {
             unsub()
         }
     }
+
+    public sync(task: TaskItem) {
+        if (
+            this.state.task?.blockLink &&
+            this.state.task.blockLink === task.blockLink
+        ) {
+            this.store.update((state) => {
+                if (state.task) {
+                    let name = state.task.name
+                    state.task = { ...task, name }
+                }
+                return state
+            })
+            console.log(this.state)
+        }
+    }
 }
