@@ -26,7 +26,7 @@ export async function parseWithTemplater(
 
     const preamble = `<%* const log = ${JSON.stringify(
         log,
-    )}; log.begin = moment(log.begin); log.end = moment(log.end); %>`
+    )}; console.log(log); log.begin = moment(log.begin); log.end = moment(log.end); %>`
 
     try {
         return await (
