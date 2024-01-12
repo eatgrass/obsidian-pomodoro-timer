@@ -65,7 +65,7 @@ const progressText = (item: TaskItem) => {
         let max = Math.max(expected, actual)
         if (max > 10) {
             if (unfinished > 0) {
-                return `🍅 x ${actual}  ◌ x ${unfinished}`
+                return `◌ x ${unfinished} 🍅 x ${actual}`
             } else {
                 return `🍅 x ${expected}  🥫 x ${Math.abs(unfinished)}`
             }

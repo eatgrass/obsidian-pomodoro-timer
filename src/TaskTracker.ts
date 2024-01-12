@@ -147,7 +147,7 @@ export default class TaskTracker implements TaskTrackerStore {
     public openTask = (task: TaskItem) => {
         let link = task.path
         if (task.blockLink) {
-            link += `#${task.blockLink.trim()}`
+            link += `#${task.blockLink}`
         }
         console.log(link)
         this.plugin.app.workspace.openLinkText(`${link}`, '')
