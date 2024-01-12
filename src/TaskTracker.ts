@@ -138,6 +138,21 @@ export default class TaskTracker implements TaskTrackerStore {
         })
     }
 
+    public openFile() {
+        if (this.state.file) {
+            this.plugin.app.workspace.openLinkText(this.state.file.path, '')
+        }
+    }
+
+    public openTask = (task: TaskItem) => {
+        let link = task.path
+        if (task.blockLink) {
+            link += `#${task.blockLink}`
+        }
+        console.log(link)
+        this.plugin.app.workspace.openLinkText(`${link}`, '')
+    }
+
     get pinned() {
         return this.state.pinned
     }

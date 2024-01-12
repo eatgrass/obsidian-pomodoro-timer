@@ -258,7 +258,7 @@ export function resolveTasks(
                 fileName: file.name,
                 name: detail.description,
                 status: components.status,
-                blockLink: components.blockLink,
+                blockLink: components.blockLink.trim(),
                 checked: rawElement.task != '' && rawElement.task != ' ',
                 description: detail.description,
                 done: detail.doneDate?.format(dateformat),

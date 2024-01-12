@@ -38,7 +38,7 @@ export class TimerView extends ItemView {
                         '',
                         this,
                     )
-                },
+                }
             },
         })
     }

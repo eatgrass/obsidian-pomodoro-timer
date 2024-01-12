@@ -3,6 +3,8 @@ import TaskItemComponent from 'TaskItemComponent.svelte'
 import type TaskTracker from 'TaskTracker'
 import Tasks, { type TaskItem } from 'Tasks'
 import { settings } from 'stores'
+import { Menu } from 'obsidian'
+
 export let tasks: Tasks
 export let tracker: TaskTracker
 export let render: (content: string, el: HTMLElement) => void
@@ -63,7 +65,7 @@ const progressText = (item: TaskItem) => {
         let max = Math.max(expected, actual)
         if (max > 10) {
             if (unfinished > 0) {
-                return `🍅 x ${actual}  ◌ x ${unfinished}`
+                return `◌ x ${unfinished} 🍅 x ${actual}`
             } else {
                 return `🍅 x ${expected}  🥫 x ${Math.abs(unfinished)}`
             }
@@ -83,6 +85,20 @@ const progressText = (item: TaskItem) => {
               ? `${'🍅'.repeat(actual)}`
               : `- -`
     }
+}
+
+const openFile = () => {
+    tracker.openFile()
+}
+
+const showTaskMenu = (task: TaskItem) => (e: MouseEvent) => {
+    const menu = new Menu()
+    menu.addItem((item) => {
+        item.setTitle('Open').onClick(() => {
+            tracker.openTask(task)
+        })
+    })
+    menu.showAtMouseEvent(e)
 }
 </script>
 
@@ -133,7 +149,7 @@ const progressText = (item: TaskItem) => {
                         >
                     {/if}
                 </span>
-                <span class="pomodoro-tasks-file-name">
+                <span class="pomodoro-tasks-file-name" on:click={openFile}>
                     {$tracker.file.name}
                 </span>
                 <span class="pomodoro-tasks-count">
@@ -212,6 +228,7 @@ const progressText = (item: TaskItem) => {
                         on:click={() => {
                             activeTask(item)
                         }}
+                        on:contextmenu={showTaskMenu(item)}
                         style="background: linear-gradient(to right, rgba(var(--color-green-rgb),0.25) {progress(
                             item,
                         )}%, transparent 0%)"
@@ -288,6 +305,10 @@ const progressText = (item: TaskItem) => {
     overflow: hidden;
     text-overflow: ellipsis;
     padding-right: 5px;
+}
+
+.pomodoro-tasks-file-name {
+    cursor: pointer;
 }
 
 .pomodoro-tasks-header-title .pomodoro-tasks-count {
