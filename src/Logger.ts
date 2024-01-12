@@ -2,12 +2,12 @@ import { type TimerState, type Mode } from 'Timer'
 import * as utils from 'utils'
 import PomodoroTimerPlugin from 'main'
 import { TFile, Notice, moment } from 'obsidian'
-import { incrTaskActual, resolveTasks, type TaskItem } from 'Tasks'
+import { incrTaskActual, type TaskItem } from 'Tasks'
 
 export type TimerLog = {
     duration: number
-    begin: moment.Moment
-    end: moment.Moment
+    begin: number
+    end: number
     mode: Mode
     session: number
     task: TaskItem
@@ -137,8 +137,8 @@ export default class Logger {
         return {
             mode: state.mode,
             duration: Math.floor(state.elapsed / 60000),
-            begin: moment(state.startTime),
-            end: moment(),
+            begin: state.startTime!,
+            end: new Date().getTime(),
             session: state.duration,
             task: state.task
                 ? { ...DEFAULT_LOG_TASK, ...state.task }
@@ -166,19 +166,21 @@ export default class Logger {
                 return ''
             }
 
+            let begin = moment(log.begin)
+            let end = moment(log.end)
             if (settings.logFormat === 'SIMPLE') {
-                return `**${log.mode}(${log.duration}m)**: ${log.begin.format(
+                return `**${log.mode}(${log.duration}m)**: ${begin.format(
                     'HH:mm',
-                )} - ${log.end.format('HH:mm')}`
+                )} - ${end.format('HH:mm')}`
             }
 
             if (settings.logFormat === 'VERBOSE') {
                 const emoji = log.mode == 'WORK' ? '🍅' : '🥤'
                 return `- ${emoji} (pomodoro::${log.mode}) (duration:: ${
                     log.duration
-                }m) (begin:: ${log.begin.format(
+                }m) (begin:: ${begin.format(
                     'YYYY-MM-DD HH:mm',
-                )}) - (end:: ${log.end.format('YYYY-MM-DD HH:mm')})`
+                )}) - (end:: ${end.format('YYYY-MM-DD HH:mm')})`
             }
 
             return ''
