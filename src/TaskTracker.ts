@@ -1,6 +1,6 @@
 import type { TaskItem } from 'Tasks'
 import type PomodoroTimerPlugin from 'main'
-import { TFile } from 'obsidian'
+import { TFile, Keymap } from 'obsidian'
 import {
     writable,
     type Readable,
@@ -138,19 +138,23 @@ export default class TaskTracker implements TaskTrackerStore {
         })
     }
 
-    public openFile() {
+    public openFile(event: MouseEvent) {
         if (this.state.file) {
-            this.plugin.app.workspace.openLinkText(this.state.file.path, '')
+            const leaf = this.plugin.app.workspace.getLeaf(
+                Keymap.isModEvent(event),
+            )
+            leaf.openFile(this.state.file)
         }
     }
 
-    public openTask = (task: TaskItem) => {
-        let link = task.path
-        if (task.blockLink) {
-            link += `#${task.blockLink}`
+    public openTask = (event: MouseEvent, task: TaskItem) => {
+        let file = this.plugin.app.vault.getAbstractFileByPath(task.path)
+        if (file && file instanceof TFile && task.line >= 0) {
+            const leaf = this.plugin.app.workspace.getLeaf(
+                Keymap.isModEvent(event),
+            )
+            leaf.openFile(file, { eState: { line: task.line } })
         }
-        console.log(link)
-        this.plugin.app.workspace.openLinkText(`${link}`, '')
     }
 
     get pinned() {

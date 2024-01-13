@@ -95,7 +95,7 @@ const showTaskMenu = (task: TaskItem) => (e: MouseEvent) => {
     const menu = new Menu()
     menu.addItem((item) => {
         item.setTitle('Open').onClick(() => {
-            tracker.openTask(task)
+            tracker.openTask(e, task)
         })
     })
     menu.showAtMouseEvent(e)
