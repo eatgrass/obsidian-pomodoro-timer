@@ -87,8 +87,8 @@ const progressText = (item: TaskItem) => {
     }
 }
 
-const openFile = () => {
-    tracker.openFile()
+const openFile = (e: MouseEvent) => {
+    tracker.openFile(e)
 }
 
 const showTaskMenu = (task: TaskItem) => (e: MouseEvent) => {
