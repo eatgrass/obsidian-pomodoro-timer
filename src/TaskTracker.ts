@@ -1,12 +1,14 @@
-import type { TaskItem } from 'Tasks'
+import { type TaskItem } from 'Tasks'
 import type PomodoroTimerPlugin from 'main'
-import { TFile, Keymap } from 'obsidian'
+import { TFile, Keymap, MarkdownView } from 'obsidian'
+import { DESERIALIZERS, POMODORO_REGEX } from 'serializer'
 import {
     writable,
     type Readable,
     type Writable,
     type Unsubscriber,
 } from 'svelte/store'
+import { extractTaskComponents } from 'utils'
 
 export type TaskTrackerState = {
     task?: TaskItem
@@ -111,7 +113,7 @@ export default class TaskTracker implements TaskTrackerStore {
                     if (task.blockLink) {
                         if (!line.endsWith(task.blockLink)) {
                             // block id mismatch?
-                            lines[task.line] += ` ${task.blockLink}`
+                            lines[task.line] += `${task.blockLink}`
                             this.plugin.app.vault.modify(f, lines.join('\n'))
                             return
                         }
@@ -119,7 +121,7 @@ export default class TaskTracker implements TaskTrackerStore {
                         // generate block id
                         let blockId = this.createBlockId()
                         task.blockLink = blockId
-                        lines[task.line] += ` ${blockId}`
+                        lines[task.line] += `${blockId}`
                         this.plugin.app.vault.modify(f, lines.join('\n'))
                     }
                 }
@@ -181,6 +183,101 @@ export default class TaskTracker implements TaskTrackerStore {
                 }
                 return state
             })
+        }
+    }
+
+    public async updateActual() {
+        // update task item
+        if (
+            this.plugin.getSettings().enableTaskTracking &&
+            this.task &&
+            this.task.blockLink
+        ) {
+            let file = this.plugin.app.vault.getAbstractFileByPath(
+                this.task.path,
+            )
+            if (file && file instanceof TFile) {
+                let f = file as TFile
+                if (this.task?.actual) {
+                    this.task.actual += 1
+                } else {
+                    this.task.actual = 1
+                }
+
+                await this.incrTaskActual(this.task.blockLink, f)
+            }
+        }
+    }
+
+    private async incrTaskActual(blockLink: string, file: TFile) {
+        const format = this.plugin.getSettings().taskFormat
+
+        if (file.extension !== 'md') {
+            return
+        }
+
+        let metadata = this.plugin.app.metadataCache.getFileCache(file)
+        let content = await this.plugin.app.vault.read(file)
+
+        if (!content || !metadata) {
+            return
+        }
+
+        const lines = content.split('\n')
+
+        for (let rawElement of metadata.listItems || []) {
+            if (rawElement.task) {
+                let lineNr = rawElement.position.start.line
+                let line = lines[lineNr]
+
+                const components = extractTaskComponents(line)
+
+				console.log(components)
+                if (!components) {
+                    continue
+                }
+
+                if (components.blockLink === blockLink) {
+                    console.log('update')
+                    const match = components.body.match(POMODORO_REGEX)
+                    if (match !== null) {
+                        let pomodoros = match[1]
+                        let [actual = '0', expected] = pomodoros.split('/')
+                        let text = `🍅:: ${parseInt(actual) + 1}`
+                        if (expected !== undefined) {
+                            text += `/${expected.trim()}`
+                        }
+                        line = line
+                            .replace(/🍅:: *(\d* *\/? *\d* *)/, text)
+                            .trim()
+                        lines[lineNr] = line
+                    } else {
+                        let detail = DESERIALIZERS[format].deserialize(
+                            components.body,
+                        )
+                        line = line.replace(
+                            detail.description,
+                            `${detail.description} [🍅:: 1]`,
+                        )
+
+                        lines[lineNr] = line
+                    }
+
+                    this.plugin.app.vault.modify(file, lines.join('\n'))
+                    this.plugin.app.metadataCache.trigger(
+                        'changed',
+                        file,
+                        content,
+                        metadata,
+                    )
+
+                    // refresh view
+                    this.plugin.app.workspace
+                        .getActiveViewOfType(MarkdownView)
+                        ?.load()
+                    break
+                }
+            }
         }
     }
 }

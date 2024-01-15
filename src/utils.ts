@@ -55,7 +55,7 @@ export const ensureFileExists = async (
 
     if (dirs.length) {
         const dir = join(...dirs)
-        if (app.vault.getAbstractFileByPath(dir)) {
+        if (!app.vault.getAbstractFileByPath(dir)) {
             await app.vault.createFolder(dir)
         }
     }
