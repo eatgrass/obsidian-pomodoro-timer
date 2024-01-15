@@ -1,4 +1,6 @@
-import type { Priority } from './TaskModels'
+import type { TaskFormat } from 'Settings'
+import { DataviewTaskSerializer } from './DataviewTaskSerializer'
+import { DefaultTaskSerializer, DEFAULT_SYMBOLS } from './DefaultTaskSerializer'
 import type { Moment } from 'moment'
 /**
  * A subset of fields of {@link Task} that can be parsed from the textual
@@ -16,7 +18,7 @@ export type TaskDetails = {
     doneDate: Moment | null
     cancelledDate: Moment | null
     recurrenceRule: string
-	pomodoros: string
+    pomodoros: string
     tags: string[]
 }
 
@@ -49,3 +51,12 @@ export interface TaskDeserializer {
 
 export { DefaultTaskSerializer, DEFAULT_SYMBOLS } from './DefaultTaskSerializer'
 export { DataviewTaskSerializer } from './DataviewTaskSerializer'
+
+export const POMODORO_REGEX = new RegExp(
+    '(?:(?=[^\\]]+\\])\\[|(?=[^)]+\\))\\() *🍅:: *(\\d* *\\/? *\\d*) *[)\\]](?: *,)?',
+)
+
+export const DESERIALIZERS: Record<TaskFormat, TaskDeserializer> = {
+    TASKS: new DefaultTaskSerializer(DEFAULT_SYMBOLS),
+    DATAVIEW: new DataviewTaskSerializer(),
+}

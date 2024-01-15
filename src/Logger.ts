@@ -2,7 +2,7 @@ import { type TimerState, type Mode } from 'Timer'
 import * as utils from 'utils'
 import PomodoroTimerPlugin from 'main'
 import { TFile, Notice, moment } from 'obsidian'
-import { incrTaskActual, type TaskItem } from 'Tasks'
+import { type TaskItem } from 'Tasks'
 
 export type TimerLog = {
     duration: number
@@ -53,29 +53,6 @@ export default class Logger {
             const logText = await this.toText(log, logFile)
             if (logText) {
                 await this.plugin.app.vault.append(logFile, `\n${logText}`)
-            }
-        }
-
-        // update task item
-        if (this.plugin.getSettings().enableTaskTracking) {
-            if (
-                state.mode === 'WORK' &&
-                log.finished &&
-                state.task?.path &&
-                state.task?.blockLink
-            ) {
-                let file = this.plugin.app.vault.getAbstractFileByPath(
-                    state.task.path,
-                )
-                if (file && file instanceof TFile) {
-                    let f = file as TFile
-                    incrTaskActual(
-                        this.plugin.getSettings().taskFormat,
-                        this.plugin.app,
-                        state.task.blockLink,
-                        f,
-                    )
-                }
             }
         }
 

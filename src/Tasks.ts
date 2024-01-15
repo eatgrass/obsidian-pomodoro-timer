@@ -3,20 +3,10 @@ import { type CachedMetadata, type TFile, type App } from 'obsidian'
 import { extractTaskComponents } from 'utils'
 import { writable, derived, type Readable, type Writable } from 'svelte/store'
 
-import {
-    DataviewTaskSerializer,
-    DefaultTaskSerializer,
-    type TaskDeserializer,
-    DEFAULT_SYMBOLS,
-} from 'serializer'
 import type { TaskFormat } from 'Settings'
 import type { Unsubscriber } from 'svelte/motion'
 import { MarkdownView } from 'obsidian'
-
-const DESERIALIZERS: Record<TaskFormat, TaskDeserializer> = {
-    TASKS: new DefaultTaskSerializer(DEFAULT_SYMBOLS),
-    DATAVIEW: new DataviewTaskSerializer(),
-}
+import { DESERIALIZERS, POMODORO_REGEX } from 'serializer'
 
 export type TaskItem = {
     path: string
@@ -159,73 +149,6 @@ export default class Tasks implements Readable<TaskStore> {
     }
 }
 
-const POMODORO_REGEX = new RegExp(
-    '(?:(?=[^\\]]+\\])\\[|(?=[^)]+\\))\\() *🍅:: *(\\d* *\\/? *\\d*) *[)\\]](?: *,)?',
-)
-
-export async function incrTaskActual(
-    format: TaskFormat,
-    app: App,
-    blockLink: string,
-    file: TFile,
-) {
-    if (file.extension !== 'md') {
-        return
-    }
-
-    let metadata = app.metadataCache.getFileCache(file)
-    let content = await app.vault.read(file)
-
-    if (!content || !metadata) {
-        return
-    }
-
-    const lines = content.split('\n')
-
-    for (let rawElement of metadata.listItems || []) {
-        if (rawElement.task) {
-            let lineNr = rawElement.position.start.line
-            let line = lines[lineNr]
-
-            const components = extractTaskComponents(line)
-            if (!components) {
-                continue
-            }
-
-            if (components.blockLink === blockLink) {
-                const match = components.body.match(POMODORO_REGEX)
-                if (match !== null) {
-                    let pomodoros = match[1]
-                    let [actual = '0', expected] = pomodoros.split('/')
-                    let text = `🍅:: ${parseInt(actual) + 1}`
-                    if (expected !== undefined) {
-                        text += `/${expected.trim()}`
-                    }
-                    line = line.replace(/🍅:: *(\d* *\/? *\d* *)/, text).trim()
-                    lines[lineNr] = line
-                } else {
-                    let detail = DESERIALIZERS[format].deserialize(
-                        components.body,
-                    )
-                    line = line.replace(
-                        detail.description,
-                        `${detail.description} [🍅:: 1]`,
-                    )
-
-                    lines[lineNr] = line
-                }
-
-                app.vault.modify(file, lines.join('\n'))
-                app.metadataCache.trigger('changed', file, content, metadata)
-
-                // refresh view
-                app.workspace.getActiveViewOfType(MarkdownView)?.load()
-                break
-            }
-        }
-    }
-}
-
 export function resolveTasks(
     format: TaskFormat,
     file: TFile,
@@ -258,7 +181,7 @@ export function resolveTasks(
                 fileName: file.name,
                 name: detail.description,
                 status: components.status,
-                blockLink: components.blockLink.trim(),
+                blockLink: components.blockLink,
                 checked: rawElement.task != '' && rawElement.task != ' ',
                 description: detail.description,
                 done: detail.doneDate?.format(dateformat),

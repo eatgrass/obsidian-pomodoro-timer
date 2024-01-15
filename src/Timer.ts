@@ -29,7 +29,10 @@ export type TimerState = {
     duration: number
 }
 
-export type TimerStore = TimerState & { remained: TimerRemained }
+export type TimerStore = TimerState & {
+    remained: TimerRemained
+    finished: boolean
+}
 
 export default class Timer implements Readable<TimerStore> {
     static DEFAULT_NOTIFICATION_AUDIO = new Audio(DEFAULT_NOTIFICATION)
@@ -75,6 +78,7 @@ export default class Timer implements Readable<TimerStore> {
         this.store = derived(store, ($state) => ({
             ...$state,
             remained: this.remain($state.count, $state.elapsed),
+            finished: $state.count == $state.elapsed,
         }))
 
         this.subscribe = this.store.subscribe
@@ -136,6 +140,11 @@ export default class Timer implements Readable<TimerStore> {
                 task.actual = task.actual ? task.actual + 1 : 1
             }
             const s = { ...state, task }
+
+            if (state.mode == 'WORK') {
+                this.plugin.tracker?.updateActual()
+            }
+
             this.logger.log(s).then((logFile) => {
                 this.notify(s, logFile)
             })
