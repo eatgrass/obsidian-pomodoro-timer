@@ -232,13 +232,11 @@ export default class TaskTracker implements TaskTrackerStore {
 
                 const components = extractTaskComponents(line)
 
-				console.log(components)
                 if (!components) {
                     continue
                 }
 
                 if (components.blockLink === blockLink) {
-                    console.log('update')
                     const match = components.body.match(POMODORO_REGEX)
                     if (match !== null) {
                         let pomodoros = match[1]
