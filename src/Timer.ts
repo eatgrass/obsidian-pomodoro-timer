@@ -37,8 +37,6 @@ const DEFAULT_TASK: TaskItem = {
     recurrence: '',
     tags: [],
     line: -1,
-    lineCount: 0,
-    indentation: '',
 }
 
 export type TimerState = {

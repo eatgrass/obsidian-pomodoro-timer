@@ -28,8 +28,6 @@ export type TaskItem = {
     actual: number
     tags: string[]
     line: number
-    indentation: string
-    lineCount: number
 }
 
 export type TaskStore = {
@@ -197,11 +195,6 @@ export function resolveTasks(
                 actual: actual === '' ? 0 : parseInt(actual),
                 tags: detail.tags,
                 line: lineNr,
-                indentation: components.indentation,
-                lineCount:
-                    rawElement.position.end.line -
-                    rawElement.position.start.line +
-                    1,
             }
 
             cache[lineNr] = item
