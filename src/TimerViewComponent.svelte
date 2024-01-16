@@ -67,9 +67,9 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
                     <span></span>
                 </div>
                 <div on:click={toggleTimer} class="control">
-                    <h2 class="timer-text">
+                    <span class="timer-text">
                         {$timer.remained.human}
-                    </h2>
+                    </span>
                 </div>
             </div>
             <svg
@@ -257,8 +257,14 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
 }
 
 .timer-text {
+    display: block;
     color: var(--pomodoro-timer-text-color);
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-block-start: 1rem;
+    margin-block-end: 1.75rem;
 }
+
 .status {
     font-size: 0.7rem;
     display: flex;
