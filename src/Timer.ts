@@ -4,9 +4,10 @@ import Worker from 'clock.worker'
 import { writable, derived } from 'svelte/store'
 import type { Readable } from 'svelte/store'
 import { Notice, TFile } from 'obsidian'
-import Logger from 'Logger'
+import Logger, { type LogContext } from 'Logger'
 import DEFAULT_NOTIFICATION from 'Notification'
 import type { Unsubscriber } from 'svelte/motion'
+import type { TaskItem } from 'Tasks'
 
 export type Mode = 'WORK' | 'BREAK'
 
@@ -15,6 +16,28 @@ export type TimerRemained = {
     human: string
 }
 
+const DEFAULT_TASK: TaskItem = {
+    actual: 0,
+    expected: 0,
+    path: '',
+    fileName: '',
+    text: '',
+    name: '',
+    status: '',
+    blockLink: '',
+    checked: false,
+    done: '',
+    due: '',
+    created: '',
+    cancelled: '',
+    scheduled: '',
+    start: '',
+    description: '',
+    priority: '',
+    recurrence: '',
+    tags: [],
+    line: -1,
+}
 export type TimerState = {
     autostart: boolean
     running: boolean
@@ -134,25 +157,35 @@ export default class Timer implements Readable<TimerStore> {
     private timeup() {
         let autostart = false
         this.update((state) => {
-            let task = this.plugin.tracker!.task
-            task = task ? { ...task } : undefined
-            if (state.mode === 'WORK' && task) {
-                task.actual = task.actual ? task.actual + 1 : 1
-            }
-            const s = { ...state, task }
 
             if (state.mode == 'WORK') {
                 this.plugin.tracker?.updateActual()
             }
 
-            this.logger.log(s).then((logFile) => {
-                this.notify(s, logFile)
+            const logCtx = this.createLogContext(state)
+
+            this.logger.log(logCtx).then((logFile) => {
+                this.notify(logCtx, logFile)
             })
             autostart = state.autostart
             return this.endSession(state)
         })
         if (autostart) {
             this.start()
+        }
+    }
+
+    private createLogContext(state: TimerState): LogContext {
+        let task: TaskItem = this.plugin.tracker!.task ?? DEFAULT_TASK
+
+        if (!task.path) {
+            task.path = this.plugin.tracker?.file?.path ?? ''
+            task.fileName = this.plugin.tracker?.file?.name ?? ''
+        }
+
+        return {
+            ...state,
+            task: { ...task },
         }
     }
 
@@ -240,7 +273,7 @@ export default class Timer implements Readable<TimerStore> {
     public reset() {
         this.update((state) => {
             if (state.elapsed > 0) {
-                this.logger.log({ ...state, task: this.plugin.tracker!.task })
+                this.logger.log(this.createLogContext(state))
             }
 
             state.duration =
