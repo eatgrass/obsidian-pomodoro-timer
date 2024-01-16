@@ -198,12 +198,16 @@ export default class TaskTracker implements TaskTrackerStore {
             )
             if (file && file instanceof TFile) {
                 let f = file as TFile
-                if (this.task?.actual) {
-                    this.task.actual += 1
-                } else {
-                    this.task.actual = 1
-                }
-
+                this.store.update((state) => {
+                    if (state.task) {
+                        if (state.task.actual >= 0) {
+                            state.task.actual += 1
+                        } else {
+                            state.task.actual = 1
+                        }
+                    }
+                    return state
+                })
                 await this.incrTaskActual(this.task.blockLink, f)
             }
         }
@@ -240,7 +244,8 @@ export default class TaskTracker implements TaskTrackerStore {
                     const match = components.body.match(POMODORO_REGEX)
                     if (match !== null) {
                         let pomodoros = match[1]
-                        let [actual = '0', expected] = pomodoros.split('/')
+                        let [actual, expected] = pomodoros.split('/')
+                        actual = actual || '0'
                         let text = `🍅:: ${parseInt(actual) + 1}`
                         if (expected !== undefined) {
                             text += `/${expected.trim()}`
@@ -248,7 +253,6 @@ export default class TaskTracker implements TaskTrackerStore {
                         line = line
                             .replace(/🍅:: *(\d* *\/? *\d* *)/, text)
                             .trim()
-                        lines[lineNr] = line
                     } else {
                         let detail = DESERIALIZERS[format].deserialize(
                             components.body,
@@ -257,11 +261,12 @@ export default class TaskTracker implements TaskTrackerStore {
                             detail.description,
                             `${detail.description} [🍅:: 1]`,
                         )
-
-                        lines[lineNr] = line
                     }
 
-                    this.plugin.app.vault.modify(file, lines.join('\n'))
+                    lines[lineNr] = line
+
+                    await this.plugin.app.vault.modify(file, lines.join('\n'))
+
                     this.plugin.app.metadataCache.trigger(
                         'changed',
                         file,
@@ -269,7 +274,6 @@ export default class TaskTracker implements TaskTrackerStore {
                         metadata,
                     )
 
-                    // refresh view
                     this.plugin.app.workspace
                         .getActiveViewOfType(MarkdownView)
                         ?.load()

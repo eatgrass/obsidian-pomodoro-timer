@@ -93,9 +93,12 @@ const updateBreakLen = (e: Event) => {
     font-size: 0.8rem;
     align-items: center;
     justify-content: space-between;
-    border-top: 1px solid var(--background-modifier-border);
     height: 2rem;
     padding: 0.5rem 1rem;
+}
+
+.pomodoro-settings-item + .pomodoro-settings-item {
+    border-top: 1px solid var(--background-modifier-border);
 }
 
 .pomodoro-settings-item input[type='number'] {

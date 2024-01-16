@@ -10,34 +10,34 @@ export type TimerLog = {
     end: number
     mode: Mode
     session: number
-    task: TaskItem
+    task: TaskLog
     finished: boolean
 }
 
-const DEFAULT_LOG_TASK: TaskItem = {
-    actual: 0,
-    expected: 0,
-    path: '',
-    fileName: '',
-    text: '',
-    name: '',
-    status: '',
-    blockLink: '',
-    checked: false,
-    done: '',
-    due: '',
-    created: '',
-    cancelled: '',
-    scheduled: '',
-    start: '',
-    description: '',
-    priority: '',
-    recurrence: '',
-    tags: [],
-    line: -1,
-}
+export type TaskLog = Pick<
+    TaskItem,
+    | 'fileName'
+    | 'path'
+    | 'name'
+    | 'text'
+    | 'description'
+    | 'blockLink'
+    | 'actual'
+    | 'expected'
+    | 'status'
+    | 'checked'
+    | 'created'
+    | 'start'
+    | 'scheduled'
+    | 'due'
+    | 'done'
+    | 'cancelled'
+    | 'priority'
+    | 'recurrence'
+    | 'tags'
+>
 
-type LogState = TimerState & { task?: TaskItem }
+export type LogContext = TimerState & { task: TaskItem }
 
 export default class Logger {
     private plugin: PomodoroTimerPlugin
@@ -46,9 +46,9 @@ export default class Logger {
         this.plugin = plugin
     }
 
-    public async log(state: LogState): Promise<TFile | void> {
-        const logFile = await this.resolveLogFile(state)
-        const log = this.createLog(state)
+    public async log(ctx: LogContext): Promise<TFile | void> {
+        const logFile = await this.resolveLogFile(ctx)
+        const log = this.createLog(ctx)
         if (logFile) {
             const logText = await this.toText(log, logFile)
             if (logText) {
@@ -59,22 +59,22 @@ export default class Logger {
         return logFile
     }
 
-    private async resolveLogFile(state: LogState): Promise<TFile | void> {
+    private async resolveLogFile(ctx: LogContext): Promise<TFile | void> {
         const settings = this.plugin!.getSettings()
 
         // filter log level
-        if (settings.logLevel !== 'ALL' && settings.logLevel !== state.mode) {
+        if (settings.logLevel !== 'ALL' && settings.logLevel !== ctx.mode) {
             return
         }
 
         // focused file has the highest priority
         if (
             settings.logFocused &&
-            state.task?.path &&
-            state.task.path.endsWith('md')
+            ctx.task.path &&
+            ctx.task.path.endsWith('md')
         ) {
             const file = this.plugin.app.vault.getAbstractFileByPath(
-                state.task.path,
+                ctx.task.path,
             )
             if (file && file instanceof TFile) {
                 return file
@@ -110,17 +110,15 @@ export default class Logger {
         }
     }
 
-    private createLog(state: LogState): TimerLog {
+    private createLog(ctx: LogContext): TimerLog {
         return {
-            mode: state.mode,
-            duration: Math.floor(state.elapsed / 60000),
-            begin: state.startTime!,
+            mode: ctx.mode,
+            duration: Math.floor(ctx.elapsed / 60000),
+            begin: ctx.startTime!,
             end: new Date().getTime(),
-            session: state.duration,
-            task: state.task
-                ? { ...DEFAULT_LOG_TASK, ...state.task }
-                : DEFAULT_LOG_TASK,
-            finished: state.count == state.elapsed,
+            session: ctx.duration,
+            task: ctx.task,
+            finished: ctx.count == ctx.elapsed,
         }
     }
 
@@ -131,12 +129,18 @@ export default class Logger {
             utils.getTemplater(this.plugin.app)
         ) {
             // use templater
-            return await utils.parseWithTemplater(
-                this.plugin.app,
-                file,
-                settings.logTemplate,
-                log,
-            )
+            try {
+                return await utils.parseWithTemplater(
+                    this.plugin.app,
+                    file,
+                    settings.logTemplate,
+                    log,
+                )
+            } catch (e) {
+                new Notice('Invalid template')
+                console.error('invalid templat:', e)
+                return ''
+            }
         } else {
             // Built-in log: ignore unfinished session
             if (!log.finished) {

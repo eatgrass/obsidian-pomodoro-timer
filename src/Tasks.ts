@@ -5,8 +5,7 @@ import { writable, derived, type Readable, type Writable } from 'svelte/store'
 
 import type { TaskFormat } from 'Settings'
 import type { Unsubscriber } from 'svelte/motion'
-import { MarkdownView } from 'obsidian'
-import { DESERIALIZERS, POMODORO_REGEX } from 'serializer'
+import { DESERIALIZERS } from 'serializer'
 
 export type TaskItem = {
     path: string
