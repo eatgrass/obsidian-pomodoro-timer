@@ -37,7 +37,10 @@ const DEFAULT_TASK: TaskItem = {
     recurrence: '',
     tags: [],
     line: -1,
+    lineCount: 0,
+    indentation: '',
 }
+
 export type TimerState = {
     autostart: boolean
     running: boolean
@@ -157,7 +160,6 @@ export default class Timer implements Readable<TimerStore> {
     private timeup() {
         let autostart = false
         this.update((state) => {
-
             if (state.mode == 'WORK') {
                 this.plugin.tracker?.updateActual()
             }

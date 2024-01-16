@@ -10,9 +10,32 @@ export type TimerLog = {
     end: number
     mode: Mode
     session: number
-    task: TaskItem
+    task: TaskLog
     finished: boolean
 }
+
+export type TaskLog = Pick<
+    TaskItem,
+    | 'fileName'
+    | 'path'
+    | 'name'
+    | 'text'
+    | 'description'
+    | 'blockLink'
+    | 'actual'
+    | 'expected'
+    | 'status'
+    | 'checked'
+    | 'created'
+    | 'start'
+    | 'scheduled'
+    | 'due'
+    | 'done'
+    | 'cancelled'
+    | 'priority'
+    | 'recurrence'
+    | 'tags'
+>
 
 export type LogContext = TimerState & { task: TaskItem }
 

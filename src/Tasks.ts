@@ -5,8 +5,7 @@ import { writable, derived, type Readable, type Writable } from 'svelte/store'
 
 import type { TaskFormat } from 'Settings'
 import type { Unsubscriber } from 'svelte/motion'
-import { MarkdownView } from 'obsidian'
-import { DESERIALIZERS, POMODORO_REGEX } from 'serializer'
+import { DESERIALIZERS } from 'serializer'
 
 export type TaskItem = {
     path: string
@@ -29,6 +28,8 @@ export type TaskItem = {
     actual: number
     tags: string[]
     line: number
+    indentation: string
+    lineCount: number
 }
 
 export type TaskStore = {
@@ -196,6 +197,11 @@ export function resolveTasks(
                 actual: actual === '' ? 0 : parseInt(actual),
                 tags: detail.tags,
                 line: lineNr,
+                indentation: components.indentation,
+                lineCount:
+                    rawElement.position.end.line -
+                    rawElement.position.start.line +
+                    1,
             }
 
             cache[lineNr] = item
