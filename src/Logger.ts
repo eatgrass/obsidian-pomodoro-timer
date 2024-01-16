@@ -129,12 +129,18 @@ export default class Logger {
             utils.getTemplater(this.plugin.app)
         ) {
             // use templater
-            return await utils.parseWithTemplater(
-                this.plugin.app,
-                file,
-                settings.logTemplate,
-                log,
-            )
+            try {
+                return await utils.parseWithTemplater(
+                    this.plugin.app,
+                    file,
+                    settings.logTemplate,
+                    log,
+                )
+            } catch (e) {
+                new Notice('Invalid template')
+                console.error('invalid templat:', e)
+                return ''
+            }
         } else {
             // Built-in log: ignore unfinished session
             if (!log.finished) {

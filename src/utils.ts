@@ -28,22 +28,17 @@ export async function parseWithTemplater(
         log,
     )}; log.begin = moment(log.begin); log.end = moment(log.end); %>`
 
-    try {
-        return await (
-            templater.templater as {
-                parse_template: (
-                    opt: { target_file: TFile; run_mode: number },
-                    content: string,
-                ) => Promise<string>
-            }
-        ).parse_template(
-            { target_file: tfile, run_mode: 4 },
-            `${preamble}${templateContent}`,
-        )
-    } catch (e) {
-        console.error('failed to parse with template:', log, e)
-        return ''
-    }
+    return await (
+        templater.templater as {
+            parse_template: (
+                opt: { target_file: TFile; run_mode: number },
+                content: string,
+            ) => Promise<string>
+        }
+    ).parse_template(
+        { target_file: tfile, run_mode: 4 },
+        `${preamble}${templateContent}`,
+    )
 }
 
 export const ensureFileExists = async (
@@ -199,4 +194,3 @@ export function toInlineFieldRegex(innerFieldRegex: RegExp): RegExp {
         .join('')
     return new RegExp(fieldRegex, innerFieldRegex.flags)
 }
-
