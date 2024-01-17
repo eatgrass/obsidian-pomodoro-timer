@@ -174,8 +174,11 @@ export default class Timer implements Readable<TimerStore> {
             ? { ...this.plugin.tracker.task }
             : { ...DEFAULT_TASK }
 
-        task.path = this.plugin.tracker?.file?.path ?? ''
-        task.fileName = this.plugin.tracker?.file?.name ?? ''
+		if(!task.path) {
+			task.path = this.plugin.tracker?.file?.path ?? ''
+			task.fileName = this.plugin.tracker?.file?.name ?? ''
+		}
+
         return { ...state, task }
     }
 
