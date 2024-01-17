@@ -15,12 +15,12 @@ export type TaskItem = {
     status: string
     blockLink: string
     checked: boolean
-    done?: string
-    due?: string
-    created?: string
-    cancelled?: string
-    scheduled?: string
-    start?: string
+    done: string
+    due: string
+    created: string
+    cancelled: string
+    scheduled: string
+    start: string
     description: string
     priority: string
     recurrence: string
@@ -183,12 +183,12 @@ export function resolveTasks(
                 blockLink: components.blockLink,
                 checked: rawElement.task != '' && rawElement.task != ' ',
                 description: detail.description,
-                done: detail.doneDate?.format(dateformat),
-                due: detail.dueDate?.format(dateformat),
-                created: detail.createdDate?.format(dateformat),
-                cancelled: detail.cancelledDate?.format(dateformat),
-                scheduled: detail.scheduledDate?.format(dateformat),
-                start: detail.startDate?.format(dateformat),
+                done: detail.doneDate?.format(dateformat) ?? '',
+                due: detail.dueDate?.format(dateformat) ?? '',
+                created: detail.createdDate?.format(dateformat) ?? '',
+                cancelled: detail.cancelledDate?.format(dateformat) ?? '',
+                scheduled: detail.scheduledDate?.format(dateformat) ?? '',
+                start: detail.startDate?.format(dateformat) ?? '',
                 priority: detail.priority,
                 recurrence: detail.recurrenceRule,
                 expected: expected ? parseInt(expected) : 0,
