@@ -158,15 +158,8 @@ export default class Timer implements Readable<TimerStore> {
     private timeup() {
         let autostart = false
         this.update((state) => {
-            if (state.mode == 'WORK') {
-                this.plugin.tracker?.updateActual()
-            }
-
-            const logCtx = this.createLogContext(state)
-
-            this.logger.log(logCtx).then((logFile) => {
-                this.notify(logCtx, logFile)
-            })
+            const ctx = this.createLogContext(state)
+            this.processLog(ctx)
             autostart = state.autostart
             return this.endSession(state)
         })
@@ -175,18 +168,23 @@ export default class Timer implements Readable<TimerStore> {
         }
     }
 
-    private createLogContext(state: TimerState): LogContext {
-        let task: TaskItem = this.plugin.tracker!.task ?? DEFAULT_TASK
+    private createLogContext(s: TimerState): LogContext {
+        let state = { ...s }
+        let task = this.plugin.tracker?.task
+            ? { ...this.plugin.tracker.task }
+            : { ...DEFAULT_TASK }
 
-        if (!task.path) {
-            task.path = this.plugin.tracker?.file?.path ?? ''
-            task.fileName = this.plugin.tracker?.file?.name ?? ''
-        }
+        task.path = this.plugin.tracker?.file?.path ?? ''
+        task.fileName = this.plugin.tracker?.file?.name ?? ''
+        return { ...state, task }
+    }
 
-        return {
-            ...state,
-            task: { ...task },
+    private async processLog(ctx: LogContext) {
+        if (ctx.mode == 'WORK') {
+            await this.plugin.tracker?.updateActual()
         }
+        const logFile = await this.logger.log(ctx)
+        this.notify(ctx, logFile)
     }
 
     public start() {
