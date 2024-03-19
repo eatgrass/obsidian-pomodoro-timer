@@ -186,6 +186,12 @@ dv.table(
 | --pomodoro-timer-text-color    | var(--text-normal) |
 | --pomodoro-timer-dot-color     | var(--color-ted)   |
 
+## FAQ
+
+1. How to Switch the Session
+
+To switch sessions, simply click on the `Work/Break` label displayed on the timer.
+
 ---
 
 [<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="BuyMeACoffee" width="150">](https://www.buymeacoffee.com/eatgrass)

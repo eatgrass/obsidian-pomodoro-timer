@@ -41,7 +41,6 @@ const ctxMenu = (e: MouseEvent) => {
     menu.addItem((item) => {
         const mode = `Switch ${$store.mode === 'WORK' ? 'Break' : 'Work'} `
         item.setTitle(mode)
-        item.setDisabled($store.running || $store.inSession)
         item.onClick(() => {
             store.toggleMode()
         })
