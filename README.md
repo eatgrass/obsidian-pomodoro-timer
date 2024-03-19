@@ -192,6 +192,10 @@ dv.table(
 
 To switch sessions, simply click on the `Work/Break` label displayed on the timer.
 
+2. How to completely disable `Break` sessions
+
+You can adjust the break interval setting to `0`, this will turn off `Break` sessions.
+
 ---
 
 [<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="BuyMeACoffee" width="150">](https://www.buymeacoffee.com/eatgrass)
