@@ -55,7 +55,7 @@ const toggleExtra = (value: 'settings' | 'tasks') => {
         <div class="timer">
             <div class="timer-display">
                 <div
-                    class="status {$timer.inSession ? '' : 'control'}"
+                    class="status control"
                     on:click={toggleMode}
                 >
                     {#if $timer.running}<span class="breath"></span>{/if}

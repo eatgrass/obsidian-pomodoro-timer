@@ -295,9 +295,6 @@ export default class Timer implements Readable<TimerStore> {
 
     public toggleMode(callback?: (state: TimerState) => void) {
         this.update((s) => {
-            if (s.inSession) {
-                return s
-            }
             let updated = this.endSession(s)
             if (callback) {
                 callback(updated)
